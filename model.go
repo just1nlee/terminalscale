@@ -2,14 +2,16 @@ package main
 
 import (
 	"os"
+	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/creack/pty"
+	"github.com/hinshun/vt10x"
 )
 
 type model struct {
 	pty    *PTY
-	buffer string
+	term   vt10x.Terminal
 	width  int
 	height int
 }
@@ -37,17 +39,19 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
 		m.pty.Master.Write([]byte(msg.String()))
 	case ptyOutput:
-		m.buffer += msg.data
+		m.term.Write([]byte(msg.data)) // feeds raw bytes from PTY into vt10x
 		return m, readPTY(m.pty.Master)
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		// Resize vt10x terminal window also
+		m.term.Resize(msg.Width, msg.Height)
 		pty.Setsize(m.pty.Master, &pty.Winsize{
 			Rows: uint16(msg.Height),
 			Cols: uint16(msg.Width),
@@ -56,6 +60,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) View() string {
-	return m.buffer
+func (m model) View() tea.View {
+	m.term.Lock()
+	defer m.term.Unlock()
+
+	// String builder reads from vt10x's internal 2D cell grid
+	var sb strings.Builder
+	for y := 0; y < m.height; y++ {
+		for x := 0; x < m.width; x++ {
+			ch := m.term.Cell(x, y).Char
+			if ch == 0 {
+				sb.WriteRune(' ')
+			} else {
+				sb.WriteRune(ch)
+			}
+		}
+		if y < m.height-1 {
+			sb.WriteByte('\n')
+		}
+	}
+
+	// Update view with the built string
+	v := tea.NewView(sb.String())
+	v.AltScreen = true
+	return v
 }

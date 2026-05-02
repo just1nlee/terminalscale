@@ -60,6 +60,5 @@ func (p *PTY) HandleResize() {
 }
 
 func (p *PTY) Close() {
-	p.RestoreState()
 	p.Master.Close()
 }
