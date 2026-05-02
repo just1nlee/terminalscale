@@ -4,9 +4,11 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
 
-	"github.com/charmbracelet/x/term"
 	"github.com/creack/pty"
+	"golang.org/x/term"
 )
 
 func main() {
@@ -26,6 +28,19 @@ func main() {
 	}
 	// Switch back to cooked mode after program ends
 	defer term.Restore(int(os.Stdin.Fd()), oldState) // Restores cooked mode state
+
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGWINCH)
+	go func() {
+		for range ch {
+			size, err := pty.GetsizeFull(os.Stdin)
+			if err != nil {
+				return
+			}
+			pty.Setsize(ptmx, size)
+		}
+	}()
+	ch <- syscall.SIGWINCH
 
 	// PTY Output
 	go io.Copy(os.Stdout, ptmx)
