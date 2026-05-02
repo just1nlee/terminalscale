@@ -18,6 +18,8 @@ type PTY struct {
 func NewPTY() (*PTY, error) {
 	// SHELL to run
 	cmd := exec.Command("bash")
+	// Set TERM environment variable
+	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
 
 	master, err := pty.Start(cmd)
 	if err != nil {
