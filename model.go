@@ -87,7 +87,7 @@ func (m model) View() tea.View {
 				ch = ' '
 			}
 
-			// Add color using lipgloss
+			// Add color and mode using lipgloss
 			style := lipgloss.NewStyle()
 			// Check default foreground, if cell doesn't have explicit color set then use terminal default
 			if cell.FG != vt10x.DefaultFG {
@@ -96,6 +96,20 @@ func (m model) View() tea.View {
 			// Check default background, if cell doesn't have explicit color set then use terminal default
 			if cell.BG != vt10x.DefaultBG {
 				style = style.Background(vtColor(cell.BG))
+			}
+
+			// Check mode
+			if cell.Mode&1 != 0 { // AttrReverse
+				style = style.Reverse(true)
+			}
+			if cell.Mode&2 != 0 { // AttrUnderline
+				style = style.Underline(true)
+			}
+			if cell.Mode&4 != 0 { // AttrBold
+				style = style.Bold(true)
+			}
+			if cell.Mode&16 != 0 { // AttrItalic
+				style = style.Italic(true)
 			}
 
 			sb.WriteString(style.Render(string(ch)))
