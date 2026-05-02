@@ -105,5 +105,12 @@ func (m model) View() tea.View {
 	// Update view with the built string
 	v := tea.NewView(sb.String())
 	v.AltScreen = true
+
+	// Pass cursor position from vt10x to bubbletea
+	cursor := m.term.Cursor()
+	if m.term.CursorVisible() {
+		v.Cursor = tea.NewCursor(cursor.X, cursor.Y)
+	}
+
 	return v
 }
