@@ -1,8 +1,10 @@
 package main
 
 import (
-	"io"
+	"fmt"
 	"os"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {
@@ -20,8 +22,13 @@ func main() {
 
 	ptmx.HandleResize()
 
-	// PTY Output
-	go io.Copy(os.Stdout, ptmx.Master)
-	// PTY Input
-	io.Copy(ptmx.Master, os.Stdin)
+	m := model{
+		pty: ptmx,
+	}
+
+	p := tea.NewProgram(m, tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		fmt.Println("error running program:", err)
+		os.Exit(1)
+	}
 }
