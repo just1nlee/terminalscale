@@ -43,7 +43,29 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
-		m.pty.Master.Write([]byte(msg.String()))
+		key := msg.Key()
+		if key.Text != "" {
+			// Printable character
+			m.pty.Master.Write([]byte(key.Text))
+		} else {
+			// Special key, translate to raw bytes
+			switch key.Code {
+			case tea.KeyEnter:
+				m.pty.Master.Write([]byte("\r"))
+			case tea.KeyBackspace:
+				m.pty.Master.Write([]byte("\x7f"))
+			case tea.KeyTab:
+				m.pty.Master.Write([]byte("\t"))
+			case tea.KeyUp:
+				m.pty.Master.Write([]byte("\x1b[A"))
+			case tea.KeyDown:
+				m.pty.Master.Write([]byte("\x1b[B"))
+			case tea.KeyRight:
+				m.pty.Master.Write([]byte("\x1b[C"))
+			case tea.KeyLeft:
+				m.pty.Master.Write([]byte("\x1b[D"))
+			}
+		}
 	case ptyOutput:
 		m.term.Write([]byte(msg.data)) // feeds raw bytes from PTY into vt10x
 		return m, readPTY(m.pty.Master)
