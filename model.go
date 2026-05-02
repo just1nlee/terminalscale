@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"image/color"
 	"os"
 	"strings"
 
@@ -19,19 +21,6 @@ type model struct {
 
 type ptyOutput struct {
 	data string
-}
-
-// Cmd that reads up to 4096 bytes from PTY, returns as a Msg for Update() to read
-// Takes PTY handler type as parameters
-func readPTY(master *os.File) tea.Cmd {
-	return func() tea.Msg {
-		buf := make([]byte, 4096)
-		n, err := master.Read(buf)
-		if err != nil {
-			return nil
-		}
-		return ptyOutput{data: string(buf[:n])}
-	}
 }
 
 func (m model) Init() tea.Cmd {
@@ -102,11 +91,11 @@ func (m model) View() tea.View {
 			style := lipgloss.NewStyle()
 			// Check default foreground, if cell doesn't have explicit color set then use terminal default
 			if cell.FG != vt10x.DefaultFG {
-				style = style.Foreground(lipgloss.ANSIColor(int(cell.FG)))
+				style = style.Foreground(vtColor(cell.FG))
 			}
 			// Check default background, if cell doesn't have explicit color set then use terminal default
 			if cell.BG != vt10x.DefaultBG {
-				style = style.Background(lipgloss.ANSIColor(int(cell.BG)))
+				style = style.Background(vtColor(cell.BG))
 			}
 
 			sb.WriteString(style.Render(string(ch)))
@@ -128,4 +117,29 @@ func (m model) View() tea.View {
 	}
 
 	return v
+}
+
+// HELPER FUNCTIONS
+
+// Cmd that reads up to 4096 bytes from PTY, returns as a Msg for Update() to read
+// Takes PTY handler type as parameters
+func readPTY(master *os.File) tea.Cmd {
+	return func() tea.Msg {
+		buf := make([]byte, 4096)
+		n, err := master.Read(buf)
+		if err != nil {
+			return nil
+		}
+		return ptyOutput{data: string(buf[:n])}
+	}
+}
+
+func vtColor(c vt10x.Color) color.Color {
+	if c.ANSI() {
+		// 0-15: standard ANSI colors
+		return lipgloss.ANSIColor(int(c))
+	}
+	// 16-255: xterm 256 colors
+	return lipgloss.Color(fmt.Sprintf("%d", int(c)))
+
 }
