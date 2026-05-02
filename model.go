@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/creack/pty"
 	"github.com/hinshun/vt10x"
 )
@@ -90,12 +91,26 @@ func (m model) View() tea.View {
 	var sb strings.Builder
 	for y := 0; y < m.height; y++ {
 		for x := 0; x < m.width; x++ {
-			ch := m.term.Cell(x, y).Char
+			cell := m.term.Cell(x, y)
+
+			ch := cell.Char
 			if ch == 0 {
-				sb.WriteRune(' ')
-			} else {
-				sb.WriteRune(ch)
+				ch = ' '
 			}
+
+			// Add color using lipgloss
+			style := lipgloss.NewStyle()
+			// Check default foreground, if cell doesn't have explicit color set then use terminal default
+			if cell.FG != vt10x.DefaultFG {
+				style = style.Foreground(lipgloss.ANSIColor(int(cell.FG)))
+			}
+			// Check default background, if cell doesn't have explicit color set then use terminal default
+			if cell.BG != vt10x.DefaultBG {
+				style = style.Background(lipgloss.ANSIColor(int(cell.BG)))
+			}
+
+			sb.WriteString(style.Render(string(ch)))
+
 		}
 		if y < m.height-1 {
 			sb.WriteByte('\n')
