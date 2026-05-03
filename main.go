@@ -17,8 +17,6 @@ func main() {
 
 	// Model needs to store actual size for layout calculations
 	m := model{
-		panes:    []*Pane{},
-		focused:  0,
 		width:    w,
 		height:   h,
 		paneMode: true,

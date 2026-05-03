@@ -10,14 +10,19 @@ import (
 	"github.com/hinshun/vt10x"
 )
 
+type workspace struct {
+	panes   []*Pane
+	focused int
+}
+
 type model struct {
-	panes    []*Pane
-	focused  int
-	width    int
-	height   int
-	paneMode bool
-	lastKey  string
-	showHelp bool
+	workspaces       [10]workspace
+	currentWorkspace int
+	width            int
+	height           int
+	paneMode         bool
+	lastKey          string
+	showHelp         bool
 }
 
 type ptyOutput struct {
@@ -37,9 +42,13 @@ func readPane(p *Pane) tea.Cmd {
 	}
 }
 
+func (m *model) ws() *workspace {
+	return &m.workspaces[m.currentWorkspace]
+}
+
 func (m model) Init() tea.Cmd {
 	var cmds []tea.Cmd
-	for _, p := range m.panes {
+	for _, p := range m.workspaces[m.currentWorkspace].panes {
 		cmds = append(cmds, readPane(p))
 	}
 	return tea.Batch(cmds...)
@@ -70,7 +79,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			// Toggle insert mode (only when a pane exists to receive input)
-			if key == "i" && m.lastKey == "i" && len(m.panes) > 0 {
+			if key == "i" && m.lastKey == "i" && len(m.ws().panes) > 0 {
 				m.paneMode = false
 				m.showHelp = false
 				m.lastKey = ""
@@ -94,6 +103,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "?":
 				m.showHelp = !m.showHelp
 				return m, nil
+			case "1", "2", "3", "4", "5", "6", "7", "8", "9":
+				m.currentWorkspace = int(key[0] - '1')
+				m.recalculateLayout()
+			case "0":
+				m.currentWorkspace = 9
+				m.recalculateLayout()
 			}
 			return m, nil
 		}
@@ -101,12 +116,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Record key for double-press detection for insert mode
 		m.lastKey = key
 
-		if len(m.panes) == 0 {
+		if len(m.ws().panes) == 0 {
 			return m, nil
 		}
 
 		// Send input to focused pane
-		focused := m.panes[m.focused]
+		focused := m.ws().panes[m.ws().focused]
 		k := msg.Key()
 		if k.Text != "" {
 			// Printable character
@@ -130,26 +145,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				focused.pty.Master.Write([]byte("\x1b[D"))
 			case tea.KeyEscape:
 				focused.pty.Master.Write([]byte("\x1b"))
-
 			}
 		}
 	case ptyOutput:
-		idx := -1
-		for i, p := range m.panes {
-			if p == msg.pane {
-				idx = i
-				break
+		// Search all workspaces, background panes still produce output
+		for wi := range m.workspaces {
+			for idx, p := range m.workspaces[wi].panes {
+				if p == msg.pane {
+					m.workspaces[wi].panes[idx].term.Write([]byte(msg.data))
+					return m, readPane(m.workspaces[wi].panes[idx])
+				}
 			}
 		}
-		if idx == -1 {
-			return m, nil // pane was closed, discard in-flight output
-		}
-		m.panes[idx].term.Write([]byte(msg.data)) // feeds raw bytes from PTY into vt10x
-		return m, readPane(m.panes[idx])
+		return m, nil // pane was closed, discard in-flight output
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		// Resize vt10x terminal window also
 		m.recalculateLayout()
 	}
 	return m, nil
@@ -158,15 +169,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) splitPane() tea.Cmd {
 	extraWidth := paneExtraW()
 	extraHeight := paneExtraH()
+	ws := m.ws()
 
-	switch len(m.panes) {
+	switch len(ws.panes) {
 	case 0:
 		p, err := NewPane(0, 0, m.width-extraWidth, m.height-extraHeight-StatusBarHeight)
 		if err != nil {
 			return nil
 		}
-		m.panes = append(m.panes, p)
-		m.focused = len(m.panes) - 1
+		ws.panes = append(ws.panes, p)
+		ws.focused = len(ws.panes) - 1
 		m.recalculateLayout()
 		return readPane(p)
 
@@ -179,8 +191,8 @@ func (m *model) splitPane() tea.Cmd {
 		if err != nil {
 			return nil
 		}
-		m.panes = append(m.panes, p)
-		m.focused = len(m.panes) - 1
+		ws.panes = append(ws.panes, p)
+		ws.focused = len(ws.panes) - 1
 		m.recalculateLayout()
 		return readPane(p)
 
@@ -189,14 +201,14 @@ func (m *model) splitPane() tea.Cmd {
 			return nil
 		}
 		halfH := (m.height - extraHeight*2) / 2
-		leftX := m.panes[0].x
-		leftW := m.panes[0].width
+		leftX := ws.panes[0].x
+		leftW := ws.panes[0].width
 		p, err := NewPane(leftX, halfH+extraHeight, leftW, m.height-extraHeight*2-halfH)
 		if err != nil {
 			return nil
 		}
-		m.panes = append(m.panes, p)
-		m.focused = len(m.panes) - 1
+		ws.panes = append(ws.panes, p)
+		ws.focused = len(ws.panes) - 1
 		m.recalculateLayout()
 		return readPane(p)
 
@@ -205,14 +217,14 @@ func (m *model) splitPane() tea.Cmd {
 			return nil
 		}
 		halfH := (m.height - extraHeight*2) / 2
-		rightX := m.panes[1].x
-		rightW := m.panes[1].width
+		rightX := ws.panes[1].x
+		rightW := ws.panes[1].width
 		p, err := NewPane(rightX, halfH+extraHeight, rightW, m.height-extraHeight*2-halfH)
 		if err != nil {
 			return nil
 		}
-		m.panes = append(m.panes, p)
-		m.focused = len(m.panes) - 1
+		ws.panes = append(ws.panes, p)
+		ws.focused = len(ws.panes) - 1
 		m.recalculateLayout()
 		return readPane(p)
 
@@ -222,70 +234,75 @@ func (m *model) splitPane() tea.Cmd {
 }
 
 func (m *model) closePane() {
-	if len(m.panes) == 0 {
+	ws := m.ws()
+	if len(ws.panes) == 0 {
 		return
 	}
-	m.panes[m.focused].Close()
+	ws.panes[ws.focused].Close()
 
-	copy(m.panes[m.focused:], m.panes[m.focused+1:]) // Shifts elements left
-	m.panes[len(m.panes)-1] = nil                    // nil the last slot
-	m.panes = m.panes[:len(m.panes)-1]               // Shrink the array
-	if len(m.panes) == 0 {
-		m.focused = 0
-	} else if m.focused >= len(m.panes) {
-		m.focused = len(m.panes) - 1
+	copy(ws.panes[ws.focused:], ws.panes[ws.focused+1:]) // Shifts elements left
+	ws.panes[len(ws.panes)-1] = nil                      // nil the last slot
+	ws.panes = ws.panes[:len(ws.panes)-1]                // Shrink the array
+	if len(ws.panes) == 0 {
+		ws.focused = 0
+	} else if ws.focused >= len(ws.panes) {
+		ws.focused = len(ws.panes) - 1
 	}
 
 	m.recalculateLayout()
 }
 
 func (m *model) focusLeft() {
-	if len(m.panes) == 0 {
+	ws := m.ws()
+	if len(ws.panes) == 0 {
 		return
 	}
-	focused := m.panes[m.focused]
-	for i, p := range m.panes {
+	focused := ws.panes[ws.focused]
+	for i, p := range ws.panes {
 		if p.x < focused.x && p.y < focused.y+focused.height && p.y+p.height > focused.y {
-			m.focused = i
+			ws.focused = i
 			return
 		}
 	}
 }
 
 func (m *model) focusRight() {
-	if len(m.panes) == 0 {
+	ws := m.ws()
+	if len(ws.panes) == 0 {
 		return
 	}
-	focused := m.panes[m.focused]
-	for i, p := range m.panes {
+	focused := ws.panes[ws.focused]
+	for i, p := range ws.panes {
 		if p.x > focused.x && p.y < focused.y+focused.height && p.y+p.height > focused.y {
-			m.focused = i
+			ws.focused = i
 			return
 		}
 	}
 }
 
 func (m *model) focusUp() {
-	if len(m.panes) == 0 {
+	ws := m.ws()
+	if len(ws.panes) == 0 {
 		return
 	}
-	focused := m.panes[m.focused]
-	for i, p := range m.panes {
+	focused := ws.panes[ws.focused]
+	for i, p := range ws.panes {
 		if p.y < focused.y && p.x < focused.x+focused.width && p.x+p.width > focused.x {
-			m.focused = i
+			ws.focused = i
 			return
 		}
 	}
 }
 
 func (m *model) focusDown() {
-	if len(m.panes) == 0 {
+	ws := m.ws()
+	if len(ws.panes) == 0 {
 		return
 	}
-	focused := m.panes[m.focused]
-	for i, p := range m.panes {
+	focused := ws.panes[ws.focused]
+	for i, p := range ws.panes {
 		if p.y > focused.y && p.x < focused.x+focused.width && p.x+p.width > focused.x {
-			m.focused = i
+			ws.focused = i
 			return
 		}
 	}
@@ -295,27 +312,28 @@ func (m *model) recalculateLayout() {
 	extraWidth := paneExtraW()
 	extraHeight := paneExtraH()
 	h := m.height - StatusBarHeight
+	panes := m.ws().panes
 
-	switch len(m.panes) {
+	switch len(panes) {
 	case 1:
-		m.panes[0].Resize(0, 0, m.width-extraWidth, h-extraHeight)
+		panes[0].Resize(0, 0, m.width-extraWidth, h-extraHeight)
 	case 2:
 		half := (m.width - extraWidth*2) / 2
-		m.panes[0].Resize(0, 0, half, h-extraHeight)
-		m.panes[1].Resize(half+extraWidth, 0, m.width-extraWidth*2-half, h-extraHeight)
+		panes[0].Resize(0, 0, half, h-extraHeight)
+		panes[1].Resize(half+extraWidth, 0, m.width-extraWidth*2-half, h-extraHeight)
 	case 3:
 		halfW := (m.width - extraWidth*2) / 2
 		halfH := (h - extraHeight*2) / 2
-		m.panes[0].Resize(0, 0, halfW, halfH)
-		m.panes[1].Resize(halfW+extraWidth, 0, m.width-extraWidth*2-halfW, h-extraHeight)
-		m.panes[2].Resize(0, halfH+extraHeight, halfW, h-extraHeight*2-halfH)
+		panes[0].Resize(0, 0, halfW, halfH)
+		panes[1].Resize(halfW+extraWidth, 0, m.width-extraWidth*2-halfW, h-extraHeight)
+		panes[2].Resize(0, halfH+extraHeight, halfW, h-extraHeight*2-halfH)
 	case 4:
 		halfW := (m.width - extraWidth*2) / 2
 		halfH := (h - extraHeight*2) / 2
-		m.panes[0].Resize(0, 0, halfW, halfH)
-		m.panes[1].Resize(halfW+extraWidth, 0, m.width-extraWidth*2-halfW, halfH)
-		m.panes[2].Resize(0, halfH+extraHeight, halfW, h-extraHeight*2-halfH)
-		m.panes[3].Resize(halfW+extraWidth, halfH+extraHeight, m.width-extraWidth*2-halfW, h-extraHeight*2-halfH)
+		panes[0].Resize(0, 0, halfW, halfH)
+		panes[1].Resize(halfW+extraWidth, 0, m.width-extraWidth*2-halfW, halfH)
+		panes[2].Resize(0, halfH+extraHeight, halfW, h-extraHeight*2-halfH)
+		panes[3].Resize(halfW+extraWidth, halfH+extraHeight, m.width-extraWidth*2-halfW, h-extraHeight*2-halfH)
 	}
 }
 
@@ -326,7 +344,6 @@ func vtColor(c vt10x.Color) color.Color {
 	}
 	// 16-255: xterm 256 colors
 	return lipgloss.Color(fmt.Sprintf("%d", int(c)))
-
 }
 
 func renderPane(p *Pane) string {
@@ -393,18 +410,42 @@ func (m model) renderStatusBar() string {
 		Bold(true).
 		Render("TERMINALSCALE")
 
-	left := statusBarStyle.Render(mode)
+	// Workspace 0-9 indicator
+	activeWsStyle := lipgloss.NewStyle().
+		Background(colorLightYellow).
+		Foreground(colorBackground).
+		Bold(true)
+	var wsParts []string
+	for i := 0; i < 10; i++ {
+		label := fmt.Sprintf(" %d ", (i+1)%10) // 1-9, then 0
+		if i == m.currentWorkspace {
+			wsParts = append(wsParts, activeWsStyle.Render(label))
+		} else {
+			wsParts = append(wsParts, statusBarStyle.Render(label))
+		}
+	}
+	right := strings.Join(wsParts, "")
 
+	left := statusBarStyle.Render(mode)
 	leftW := lipgloss.Width(left)
 	centerW := lipgloss.Width(center)
+	rightW := lipgloss.Width(right)
 
-	leftPad := (m.width / 2) - leftW - (centerW / 2)
-	rightPad := m.width - leftW - leftPad - centerW
+	centerStart := (m.width - centerW) / 2
+	leftPad := centerStart - leftW
+	if leftPad < 0 {
+		leftPad = 0
+	}
+	rightPad := m.width - centerStart - centerW - rightW
+	if rightPad < 0 {
+		rightPad = 0
+	}
 
 	bar := left +
 		statusBarStyle.Render(strings.Repeat(" ", leftPad)) +
 		center +
-		statusBarStyle.Render(strings.Repeat(" ", rightPad))
+		statusBarStyle.Render(strings.Repeat(" ", rightPad)) +
+		right
 
 	return bar
 }
@@ -417,11 +458,13 @@ func (m model) View() tea.View {
 		return v
 	}
 
-	// Combine pane renders using lipgloss by joing joining pane strings side by side
+	ws := m.workspaces[m.currentWorkspace]
+
+	// Combine pane renders using lipgloss by joining pane strings side by side
 	var rendered []string
-	for i, p := range m.panes {
+	for i, p := range ws.panes {
 		content := renderPane(p)
-		if i == m.focused {
+		if i == ws.focused {
 			rendered = append(rendered, focusedPaneStyle.Render(content))
 		} else {
 			rendered = append(rendered, unfocusedPaneStyle.Render(content))
@@ -429,7 +472,7 @@ func (m model) View() tea.View {
 	}
 
 	var content string
-	switch len(m.panes) {
+	switch len(ws.panes) {
 	case 1:
 		content = rendered[0]
 	case 2:
@@ -444,7 +487,7 @@ func (m model) View() tea.View {
 	}
 
 	var screen string
-	if len(m.panes) == 0 {
+	if len(ws.panes) == 0 {
 		screen = m.renderHomeScreen()
 	} else {
 		screen = content
@@ -456,12 +499,11 @@ func (m model) View() tea.View {
 
 	// Update view with the built string
 	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Left, screen, m.renderStatusBar()))
-
 	v.AltScreen = true
 
 	// Pass cursor position to focused pane from vt10x to bubbletea
-	if len(m.panes) > 0 {
-		focused := m.panes[m.focused]
+	if len(ws.panes) > 0 {
+		focused := ws.panes[ws.focused]
 		focused.term.Lock()
 		cursor := focused.term.Cursor()
 		visible := focused.term.CursorVisible()
