@@ -49,14 +49,27 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
+		key := msg.String()
+
+		if key == "ctrl+c" {
+			return m, tea.Quit
+		}
+
 		// Toggle pane mode
-		if msg.String() == "esc" && m.lastKey == "esc" {
-			m.paneMode = !m.paneMode
+		if !m.paneMode && msg.String() == "esc" && m.lastKey == "esc" {
+			m.paneMode = true
 			m.lastKey = ""
 			return m, nil
 		}
 		if m.paneMode {
-			switch msg.String() {
+			// Toggle insert mode
+			if key == "i" && m.lastKey == "i" {
+				m.paneMode = false
+				m.lastKey = ""
+				return m, nil
+			}
+			m.lastKey = key
+			switch key {
 			case "k", "w":
 				m.focusUp()
 			case "h", "a":
@@ -70,37 +83,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd
 			case "q":
 				m.closePane()
-			case "esc":
-				m.paneMode = false
 			}
-			m.lastKey = ""
 			return m, nil
 		}
 
-		// Normal mode
-		m.lastKey = msg.String()
+		// Record key for double-press detection for insert mode
+		m.lastKey = key
 
-		if msg.String() == "ctrl+c" {
-			return m, tea.Quit
-		}
-		if msg.String() == "ctrl+n" {
-			cmd := m.splitPane()
-			return m, cmd
-		}
-		// Cycle focus
-		if msg.String() == "ctrl+]" {
-			m.focused = (m.focused + 1) % len(m.panes)
-			return m, nil
-		}
 		// Send input to focused pane
 		focused := m.panes[m.focused]
-		key := msg.Key()
-		if key.Text != "" {
+		k := msg.Key()
+		if k.Text != "" {
 			// Printable character
-			focused.pty.Master.Write([]byte(key.Text))
+			focused.pty.Master.Write([]byte(k.Text))
 		} else {
 			// Special key, translate to raw bytes
-			switch key.Code {
+			switch k.Code {
 			case tea.KeyEnter:
 				focused.pty.Master.Write([]byte("\r"))
 			case tea.KeyBackspace:
@@ -204,9 +202,9 @@ func (m *model) closePane() {
 }
 
 func (m *model) focusLeft() {
+	focused := m.panes[m.focused]
 	for i, p := range m.panes {
-		// If focused pane is to the right of another pane and the panes are in the same row (same y)
-		if p.x < m.panes[m.focused].x && p.y == m.panes[m.focused].y {
+		if p.x < focused.x && p.y < focused.y+focused.height && p.y+p.height > focused.y {
 			m.focused = i
 			return
 		}
@@ -214,9 +212,9 @@ func (m *model) focusLeft() {
 }
 
 func (m *model) focusRight() {
+	focused := m.panes[m.focused]
 	for i, p := range m.panes {
-		// If focused pane is to the left of another pane and the panes are in the same row (same y)
-		if p.x > m.panes[m.focused].x && p.y == m.panes[m.focused].y {
+		if p.x > focused.x && p.y < focused.y+focused.height && p.y+p.height > focused.y {
 			m.focused = i
 			return
 		}
@@ -224,9 +222,9 @@ func (m *model) focusRight() {
 }
 
 func (m *model) focusUp() {
+	focused := m.panes[m.focused]
 	for i, p := range m.panes {
-		// If pane is above a pane and the panes are in the same column (same x)
-		if p.y < m.panes[m.focused].y && p.x == m.panes[m.focused].x {
+		if p.y < focused.y && p.x < focused.x+focused.width && p.x+p.width > focused.x {
 			m.focused = i
 			return
 		}
@@ -234,9 +232,9 @@ func (m *model) focusUp() {
 }
 
 func (m *model) focusDown() {
+	focused := m.panes[m.focused]
 	for i, p := range m.panes {
-		// If pane is below a pane and the panes are in the same column (same x)
-		if p.y > m.panes[m.focused].y && p.x == m.panes[m.focused].x {
+		if p.y > focused.y && p.x < focused.x+focused.width && p.x+p.width > focused.x {
 			m.focused = i
 			return
 		}
