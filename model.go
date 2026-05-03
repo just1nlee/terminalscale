@@ -88,6 +88,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Record key for double-press detection for insert mode
 		m.lastKey = key
 
+		if len(m.panes) == 0 {
+			return m, nil
+		}
+
 		// Send input to focused pane
 		focused := m.panes[m.focused]
 		k := msg.Key()
@@ -143,6 +147,15 @@ func (m *model) splitPane() tea.Cmd {
 	extraHeight := paneExtraH()
 
 	switch len(m.panes) {
+	case 0:
+		p, err := NewPane(0, 0, m.width-extraWidth, m.height-extraHeight-StatusBarHeight)
+		if err != nil {
+			return nil
+		}
+		m.panes = append(m.panes, p)
+		m.recalculateLayout()
+		return readPane(p)
+
 	case 1:
 		if m.width/2 < MinPaneWidth {
 			return nil
@@ -192,16 +205,17 @@ func (m *model) splitPane() tea.Cmd {
 }
 
 func (m *model) closePane() {
-	if len(m.panes) == 1 {
+	if len(m.panes) == 0 {
 		return
 	}
-
 	m.panes[m.focused].Close()
 
 	copy(m.panes[m.focused:], m.panes[m.focused+1:]) // Shifts elements left
 	m.panes[len(m.panes)-1] = nil                    // nil the last slot
 	m.panes = m.panes[:len(m.panes)-1]               // Shrink the array
-	if m.focused >= len(m.panes) {
+	if len(m.panes) == 0 {
+		m.focused = 0
+	} else if m.focused >= len(m.panes) {
 		m.focused = len(m.panes) - 1
 	}
 
@@ -209,6 +223,9 @@ func (m *model) closePane() {
 }
 
 func (m *model) focusLeft() {
+	if len(m.panes) == 0 {
+		return
+	}
 	focused := m.panes[m.focused]
 	for i, p := range m.panes {
 		if p.x < focused.x && p.y < focused.y+focused.height && p.y+p.height > focused.y {
@@ -219,6 +236,9 @@ func (m *model) focusLeft() {
 }
 
 func (m *model) focusRight() {
+	if len(m.panes) == 0 {
+		return
+	}
 	focused := m.panes[m.focused]
 	for i, p := range m.panes {
 		if p.x > focused.x && p.y < focused.y+focused.height && p.y+p.height > focused.y {
@@ -229,6 +249,9 @@ func (m *model) focusRight() {
 }
 
 func (m *model) focusUp() {
+	if len(m.panes) == 0 {
+		return
+	}
 	focused := m.panes[m.focused]
 	for i, p := range m.panes {
 		if p.y < focused.y && p.x < focused.x+focused.width && p.x+p.width > focused.x {
@@ -239,6 +262,9 @@ func (m *model) focusUp() {
 }
 
 func (m *model) focusDown() {
+	if len(m.panes) == 0 {
+		return
+	}
 	focused := m.panes[m.focused]
 	for i, p := range m.panes {
 		if p.y > focused.y && p.x < focused.x+focused.width && p.x+p.width > focused.x {
@@ -370,6 +396,12 @@ func (m model) View() tea.View {
 	// Check min size
 	if m.width < MinWidth || m.height < MinHeight {
 		v := tea.NewView(fmt.Sprintf("Terminal too small. Minimum size: %dx%d", MinWidth, MinHeight))
+		v.AltScreen = true
+		return v
+	}
+
+	if len(m.panes) == 0 {
+		v := tea.NewView(lipgloss.JoinVertical(lipgloss.Left, m.renderHomeScreen(), m.renderStatusBar()))
 		v.AltScreen = true
 		return v
 	}

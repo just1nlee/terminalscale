@@ -15,17 +15,9 @@ func main() {
 		w, h = 80, 24
 	}
 
-	// Create initial pane with border
-	extraW := paneExtraW()
-	extraH := paneExtraH()
-	firstPane, err := NewPane(0, 0, w-extraW, h-extraH-StatusBarHeight)
-	if err != nil {
-		panic(err)
-	}
-
 	// Model needs to store actual size for layout calculations
 	m := model{
-		panes:    []*Pane{firstPane},
+		panes:    []*Pane{},
 		focused:  0,
 		width:    w,
 		height:   h,
