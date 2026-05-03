@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -73,28 +74,40 @@ func (m model) renderHomeScreen() string {
 }
 
 func (m model) renderHelpPopup() string {
-	commands := []string{
-		"n        open terminal pane",
-		"?        toggle this help menu",
-		"esc esc  enter pane mode",
-		"i i      exit pane mode",
-		"h/j/k/l  focus left/down/up/right",
-		"q        close focused pane",
-		"ctrl+q   quit",
+	type entry struct{ key, desc string }
+	commands := []entry{
+		{"?", "TOGGLE HELP MENU"},
+		{"n", "CREATE TERMINAL PANE"},
+		{"esc + esc", "ENTER PANE MODE"},
+		{"i + i", "ENTER INSERT MODE"},
+		{"h/j/k/l", "FOCUS LEFT/DOWN/UP/RIGHT"},
+		{"q", "CLOSE FOCUSED PANE"},
+		{"ctrl+q", "QUIT TERMINALSCALE"},
+	}
+
+	maxKeyLen := 0
+	for _, c := range commands {
+		if len(c.key) > maxKeyLen {
+			maxKeyLen = len(c.key)
+		}
 	}
 
 	titleStyle := lipgloss.NewStyle().
 		Foreground(colorLightYellow).
 		Bold(true)
 
-	itemStyle := lipgloss.NewStyle().
+	keyStyle := lipgloss.NewStyle().
+		Foreground(colorLightYellow)
+
+	descStyle := lipgloss.NewStyle().
 		Foreground(colorWhite)
 
 	var lines []string
 	lines = append(lines, titleStyle.Render("KEYBINDINGS"))
 	lines = append(lines, "")
-	for _, cmd := range commands {
-		lines = append(lines, itemStyle.Render(cmd))
+	for _, c := range commands {
+		key := fmt.Sprintf("%-*s", maxKeyLen, c.key)
+		lines = append(lines, keyStyle.Render(key)+"  "+descStyle.Render(c.desc))
 	}
 
 	popupStyle := lipgloss.NewStyle().
