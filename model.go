@@ -67,13 +67,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.focusRight()
 			case "n":
 				cmd := m.splitPane()
-				m.paneMode = false
 				return m, cmd
 			case "q":
 				m.closePane()
-				return m, nil
+			case "esc":
+				m.paneMode = false
 			}
-			m.paneMode = false
 			m.lastKey = ""
 			return m, nil
 		}
