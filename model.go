@@ -49,7 +49,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		key := msg.String()
 
-		if key == "ctrl+c" {
+		if key == "ctrl+q" {
 			return m, tea.Quit
 		}
 
