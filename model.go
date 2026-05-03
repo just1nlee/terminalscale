@@ -141,54 +141,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) splitPane() tea.Cmd {
 	switch len(m.panes) {
 	case 1:
-		// Check min size
 		if m.width/2 < MinPaneWidth {
 			return nil
 		}
-		half := m.width / 2
-		m.panes[0].Resize(0, 0, half, m.height)
-		p, err := NewPane(half, 0, m.width-half, m.height)
-		if err != nil {
-			return nil
-		}
-		m.panes = append(m.panes, p)
-		return readPane(p)
-
-	case 2:
-		// Split right pane vertically
+	case 2, 3:
 		if m.height/2 < MinPaneHeight {
 			return nil
 		}
-		half := m.height / 2
-		rightX := m.panes[1].x
-		rightW := m.panes[1].width
-		m.panes[1].Resize(rightX, 0, rightW, half)
-		p, err := NewPane(rightX, half, rightW, m.height-half)
-		if err != nil {
-			return nil
-		}
-		m.panes = append(m.panes, p)
-		return readPane(p)
-
-	case 3:
-		// Split left pane vertically
-		if m.height/2 < MinPaneHeight {
-			return nil
-		}
-		half := m.height / 2
-		m.panes[0].Resize(0, 0, m.panes[0].width, half)
-		p, err := NewPane(0, half, m.panes[0].width, m.height-half)
-		if err != nil {
-			return nil
-		}
-		m.panes = append(m.panes, p)
-		return readPane(p)
-
-	case 4:
+	default:
 		return nil
 	}
 
-	return nil
+	p, err := NewPane(0, 0, 1, 1)
+	if err != nil {
+		return nil
+	}
+	m.panes = append(m.panes, p)
+	m.recalculateLayout()
+	return readPane(p)
 }
 
 func (m *model) closePane() {
