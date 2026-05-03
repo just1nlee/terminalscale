@@ -160,18 +160,18 @@ func (m *model) recalculateLayout() {
 		m.panes[0].Resize(0, 0, half, m.height)
 		m.panes[1].Resize(half, 0, m.width-half, m.height)
 	case 3:
-		half := m.width / 2
+		halfW := m.width / 2
 		halfH := m.height / 2
-		m.panes[0].Resize(0, 0, half, halfH)
-		m.panes[1].Resize(half, 0, m.width-half, m.height)
-		m.panes[2].Resize(0, halfH, half, m.height-halfH)
+		m.panes[0].Resize(0, 0, halfW, m.height)
+		m.panes[1].Resize(halfW, 0, m.width-halfW, halfH)
+		m.panes[2].Resize(halfW, halfH, m.width-halfW, m.height-halfH)
 	case 4:
 		halfW := m.width / 2
 		halfH := m.height / 2
 		m.panes[0].Resize(0, 0, halfW, halfH)
 		m.panes[1].Resize(halfW, 0, m.width-halfW, halfH)
-		m.panes[2].Resize(0, halfH, halfW, m.height-halfH)
-		m.panes[3].Resize(halfW, halfH, m.width-halfW, m.height-halfH)
+		m.panes[2].Resize(halfW, halfH, m.width-halfW, m.height-halfH)
+		m.panes[3].Resize(0, halfH, halfW, m.height-halfH)
 	}
 }
 
@@ -241,15 +241,6 @@ func (m model) View() tea.View {
 		return v
 	}
 
-	// Renders pane into a grid of lines
-	screen := make([][]rune, m.height)
-	for i := range screen {
-		screen[i] = make([]rune, m.width)
-		for j := range screen[i] {
-			screen[i][j] = ' '
-		}
-	}
-
 	// Combine pane renders using lipgloss by joing joining pane strings side by side
 	var rendered []string
 	for _, p := range m.panes {
@@ -263,11 +254,11 @@ func (m model) View() tea.View {
 	case 2:
 		content = lipgloss.JoinHorizontal(lipgloss.Top, rendered[0], rendered[1])
 	case 3:
-		left := lipgloss.JoinVertical(lipgloss.Left, rendered[0], rendered[2])
-		content = lipgloss.JoinHorizontal(lipgloss.Top, left, rendered[1])
+		right := lipgloss.JoinVertical(lipgloss.Left, rendered[1], rendered[2])
+		content = lipgloss.JoinHorizontal(lipgloss.Top, rendered[0], right)
 	case 4:
-		left := lipgloss.JoinVertical(lipgloss.Left, rendered[0], rendered[2])
-		right := lipgloss.JoinVertical(lipgloss.Left, rendered[1], rendered[3])
+		left := lipgloss.JoinVertical(lipgloss.Left, rendered[0], rendered[3])
+		right := lipgloss.JoinVertical(lipgloss.Left, rendered[1], rendered[2])
 		content = lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 	}
 
