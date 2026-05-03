@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -14,6 +15,7 @@ const SockPath = "/tmp/terminalscale.sock"
 type IPCRequest struct {
 	Action string `json:"action"`
 	PaneID int    `json:"pane_id,omitempty"`
+	Text   string `json:"text,omitempty"`
 }
 
 type IPCPaneInfo struct {
@@ -40,8 +42,11 @@ func serveIPC(prog *tea.Program) {
 	os.Remove(SockPath)
 	ln, err := net.Listen("unix", SockPath)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "IPC listen error: %v\n", err)
 		return
 	}
+	fmt.Fprintf(os.Stderr, "IPC listening\n")
+
 	defer ln.Close()
 	defer os.Remove(SockPath)
 

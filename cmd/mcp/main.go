@@ -34,6 +34,7 @@ type rpcErr struct {
 type ipcRequest struct {
 	Action string `json:"action"`
 	PaneID int    `json:"pane_id,omitempty"`
+	Text   string `json:"text,omitempty"`
 }
 
 type ipcPaneInfo struct {
@@ -96,12 +97,25 @@ var tools = map[string]any{
 			"description": "List all open terminal panes across all workspaces.",
 			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
 		},
+		map[string]any{
+			"name":        "write_pane",
+			"description": "Write text (e.g. a command followed by \\n) to a terminal pane's stdin.",
+			"inputSchema": map[string]any{
+				"type":     "object",
+				"required": []string{"pane_id", "text"},
+				"properties": map[string]any{
+					"pane_id": map[string]any{"type": "integer", "description": "Pane ID returned by create_pane or list_panes"},
+					"text":    map[string]any{"type": "string", "description": "Text to write to the pane (include \\n to submit a command)"},
+				},
+			},
+		},
 	},
 }
 
 func handleTool(name string, rawArgs json.RawMessage) (string, error) {
 	var args struct {
-		PaneID int `json:"pane_id"`
+		PaneID int    `json:"pane_id"`
+		Text   string `json:"text"`
 	}
 	json.Unmarshal(rawArgs, &args)
 
@@ -149,6 +163,16 @@ func handleTool(name string, rawArgs json.RawMessage) (string, error) {
 			return "[]", nil
 		}
 		return string(b), nil
+
+	case "write_pane":
+		resp, err := callIPC(ipcRequest{Action: "write_pane", PaneID: args.PaneID, Text: args.Text})
+		if err != nil {
+			return "", err
+		}
+		if resp.Error != "" {
+			return resp.Error, nil
+		}
+		return fmt.Sprintf("Wrote to pane %d", resp.PaneID), nil
 
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)

@@ -207,6 +207,20 @@ func (m *model) handleIPC(req IPCRequest) (IPCResponse, tea.Cmd) {
 		}
 		return IPCResponse{Error: "pane not found"}, nil
 
+	case "write_pane":
+		for wi := range m.workspaces {
+			for _, p := range m.workspaces[wi].panes {
+				if p.ID == req.PaneID {
+					_, err := p.pty.Master.Write([]byte(req.Text))
+					if err != nil {
+						return IPCResponse{Error: err.Error()}, nil
+					}
+					return IPCResponse{PaneID: req.PaneID}, nil
+				}
+			}
+		}
+		return IPCResponse{Error: "pane not found"}, nil
+
 	case "list_panes":
 		var infos []IPCPaneInfo
 		for wi := range m.workspaces {
