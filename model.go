@@ -60,8 +60,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if m.paneMode {
-			// Toggle insert mode
-			if key == "i" && m.lastKey == "i" {
+			// Toggle insert mode (only when a pane exists to receive input)
+			if key == "i" && m.lastKey == "i" && len(m.panes) > 0 {
 				m.paneMode = false
 				m.lastKey = ""
 				return m, nil
