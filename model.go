@@ -250,27 +250,28 @@ func (m *model) focusDown() {
 func (m *model) recalculateLayout() {
 	extraWidth := paneExtraW()
 	extraHeight := paneExtraH()
+	h := m.height - StatusBarHeight
 
 	switch len(m.panes) {
 	case 1:
-		m.panes[0].Resize(0, 0, m.width-extraWidth, m.height-extraHeight)
+		m.panes[0].Resize(0, 0, m.width-extraWidth, h-extraHeight)
 	case 2:
 		half := (m.width - extraWidth*2) / 2
-		m.panes[0].Resize(0, 0, half, m.height-extraHeight)
-		m.panes[1].Resize(half+extraWidth, 0, m.width-extraWidth*2-half, m.height-extraHeight)
+		m.panes[0].Resize(0, 0, half, h-extraHeight)
+		m.panes[1].Resize(half+extraWidth, 0, m.width-extraWidth*2-half, h-extraHeight)
 	case 3:
 		halfW := (m.width - extraWidth*2) / 2
-		halfH := (m.height - extraHeight*2) / 2
-		m.panes[0].Resize(0, 0, halfW, m.height-extraHeight)
+		halfH := (h - extraHeight*2) / 2
+		m.panes[0].Resize(0, 0, halfW, h-extraHeight)
 		m.panes[1].Resize(halfW+extraWidth, 0, m.width-extraWidth*2-halfW, halfH)
-		m.panes[2].Resize(halfW+extraWidth, halfH+extraHeight, m.width-extraWidth*2-halfW, m.height-extraHeight*2-halfH)
+		m.panes[2].Resize(halfW+extraWidth, halfH+extraHeight, m.width-extraWidth*2-halfW, h-extraHeight*2-halfH)
 	case 4:
 		halfW := (m.width - extraWidth*2) / 2
-		halfH := (m.height - extraHeight*2) / 2
+		halfH := (h - extraHeight*2) / 2
 		m.panes[0].Resize(0, 0, halfW, halfH)
 		m.panes[1].Resize(halfW+extraWidth, 0, m.width-extraWidth*2-halfW, halfH)
-		m.panes[2].Resize(halfW+extraWidth, halfH+extraHeight, m.width-extraWidth*2-halfW, m.height-extraHeight*2-halfH)
-		m.panes[3].Resize(0, halfH+extraHeight, halfW, m.height-extraHeight*2-halfH)
+		m.panes[2].Resize(halfW+extraWidth, halfH+extraHeight, m.width-extraWidth*2-halfW, h-extraHeight*2-halfH)
+		m.panes[3].Resize(0, halfH+extraHeight, halfW, h-extraHeight*2-halfH)
 	}
 }
 
@@ -334,6 +335,19 @@ func renderPane(p *Pane) string {
 	return sb.String()
 }
 
+func (m model) renderStatusBar() string {
+	content := " terminalscale "
+	bar := statusBarStyle.Render(content)
+
+	// Pad to full width
+	padLen := m.width - lipgloss.Width(bar)
+	if padLen > 0 {
+		bar += statusBarStyle.Render(strings.Repeat(" ", padLen))
+	}
+
+	return bar
+}
+
 func (m model) View() tea.View {
 	// Check min size
 	if m.width < MinWidth || m.height < MinHeight {
@@ -369,7 +383,8 @@ func (m model) View() tea.View {
 	}
 
 	// Update view with the built string
-	v := tea.NewView(content)
+	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Left, content, m.renderStatusBar()))
+
 	v.AltScreen = true
 
 	// Pass cursor position to focused pane from vt10x to bubbletea

@@ -3,12 +3,13 @@ package main
 import "charm.land/lipgloss/v2"
 
 const (
-	PanePaddingH  = 1 // left/right padding inside border
-	PanePaddingV  = 0 // top/bottom padding inside border
-	PaneMarginH   = 0 // left/right margin outside border
-	PaneMarginV   = 0 // top/bottom margin outside border
-	CursorOffsetX = 1 + PanePaddingH + PaneMarginH
-	CursorOffsetY = 1 + PanePaddingV + PaneMarginV
+	PanePaddingH    = 1 // left/right padding inside border
+	PanePaddingV    = 0 // top/bottom padding inside border
+	PaneMarginH     = 0 // left/right margin outside border
+	PaneMarginV     = 0 // top/bottom margin outside border
+	CursorOffsetX   = 1 + PanePaddingH + PaneMarginH
+	CursorOffsetY   = 1 + PanePaddingV + PaneMarginV
+	StatusBarHeight = 1
 )
 
 var (
@@ -28,6 +29,10 @@ var (
 				BorderForeground(colorWhite).
 				Padding(PanePaddingV, PanePaddingH).
 				Margin(PaneMarginV, PaneMarginH)
+
+	statusBarStyle = lipgloss.NewStyle().
+			Background(colorBackground).
+			Foreground(colorWhite)
 )
 
 func paneExtraW() int {

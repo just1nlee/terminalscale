@@ -18,7 +18,7 @@ func main() {
 	// Create initial pane with border
 	extraW := paneExtraW()
 	extraH := paneExtraH()
-	firstPane, err := NewPane(0, 0, w-extraW, h-extraH)
+	firstPane, err := NewPane(0, 0, w-extraW, h-extraH-StatusBarHeight)
 	if err != nil {
 		panic(err)
 	}
