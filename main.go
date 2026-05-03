@@ -9,11 +9,13 @@ import (
 )
 
 func main() {
+	// Calculate outer terminal size from OS
 	w, h, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
 		w, h = 80, 24
 	}
 
+	// Create initial pane with border
 	extraW := paneExtraW()
 	extraH := paneExtraH()
 	firstPane, err := NewPane(0, 0, w-extraW, h-extraH)
@@ -21,6 +23,7 @@ func main() {
 		panic(err)
 	}
 
+	// Model needs to store actual size for layout calculations
 	m := model{
 		panes:   []*Pane{firstPane},
 		focused: 0,
