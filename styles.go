@@ -19,7 +19,7 @@ var (
 
 	focusedPaneStyle = lipgloss.NewStyle().
 				Border(lipgloss.NormalBorder()).
-				BorderForeground(colorGreenDim).
+				BorderForeground(colorGreenBright).
 				Padding(PanePaddingV, PanePaddingH).
 				Margin(PaneMarginV, PaneMarginH)
 
