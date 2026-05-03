@@ -13,18 +13,23 @@ import (
 )
 
 type model struct {
-	pty    *PTY
-	term   vt10x.Terminal
-	width  int
-	height int
+	panes   []*Pane
+	focused int
+	width   int
+	height  int
 }
 
 type ptyOutput struct {
-	data string
+	index int
+	data  string
 }
 
 func (m model) Init() tea.Cmd {
-	return readPTY(m.pty.Master)
+	var cmds []tea.Cmd
+	for i, p := range m.panes {
+		cmds = append(cmds, readPane(i, p.pty.Master))
+	}
+	return tea.Batch(cmds...)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -33,6 +38,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
+
 		key := msg.Key()
 		if key.Text != "" {
 			// Printable character
@@ -137,14 +143,14 @@ func (m model) View() tea.View {
 
 // Cmd that reads up to 4096 bytes from PTY, returns as a Msg for Update() to read
 // Takes PTY handler type as parameters
-func readPTY(master *os.File) tea.Cmd {
+func readPane(index int, master *os.File) tea.Cmd {
 	return func() tea.Msg {
 		buf := make([]byte, 4096)
 		n, err := master.Read(buf)
 		if err != nil {
 			return nil
 		}
-		return ptyOutput{data: string(buf[:n])}
+		return ptyOutput{index: index, data: string(buf[:n])}
 	}
 }
 
