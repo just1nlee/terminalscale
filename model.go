@@ -412,7 +412,7 @@ func (m model) renderStatusBar() string {
 func (m model) View() tea.View {
 	// Check min size
 	if m.width < MinWidth || m.height < MinHeight {
-		v := tea.NewView(fmt.Sprintf("Terminal too small. Minimum size: %dx%d", MinWidth, MinHeight))
+		v := tea.NewView(fmt.Sprintf("ERROR: Terminal too small. Minimum size: %dx%d", MinWidth, MinHeight))
 		v.AltScreen = true
 		return v
 	}
