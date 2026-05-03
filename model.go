@@ -12,10 +12,12 @@ import (
 )
 
 type model struct {
-	panes   []*Pane
-	focused int
-	width   int
-	height  int
+	panes    []*Pane
+	focused  int
+	width    int
+	height   int
+	paneMode bool
+	lastKey  string
 }
 
 type ptyOutput struct {
@@ -47,6 +49,33 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
+		// Toggle pane mode
+		if msg.String() == "escape" && m.lastKey == "escape" {
+			m.paneMode = !m.paneMode
+			m.lastKey = ""
+			return m, nil
+		}
+		if m.paneMode {
+			switch msg.String() {
+			case "k", "w":
+				m.focusUp()
+			case "h", "a":
+				m.focusLeft()
+			case "j", "s":
+				m.focusDown()
+			case "l", "d":
+				m.focusRight()
+			case "n":
+				cmd := m.splitPane()
+				return m, cmd
+			case "q":
+				m.closePane()
+			}
+		}
+
+		// Normal mode
+		m.lastKey = msg.String()
+
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
@@ -150,6 +179,11 @@ func (m *model) splitPane() tea.Cmd {
 
 	return nil
 }
+
+func (m *model) focusLeft()  {}
+func (m *model) focusRight() {}
+func (m *model) focusUp()    {}
+func (m *model) focusDown()  {}
 
 func (m *model) recalculateLayout() {
 	switch len(m.panes) {
