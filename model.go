@@ -153,6 +153,7 @@ func (m *model) splitPane() tea.Cmd {
 			return nil
 		}
 		m.panes = append(m.panes, p)
+		m.focused = len(m.panes) - 1
 		m.recalculateLayout()
 		return readPane(p)
 
@@ -166,6 +167,7 @@ func (m *model) splitPane() tea.Cmd {
 			return nil
 		}
 		m.panes = append(m.panes, p)
+		m.focused = len(m.panes) - 1
 		m.recalculateLayout()
 		return readPane(p)
 
@@ -181,6 +183,7 @@ func (m *model) splitPane() tea.Cmd {
 			return nil
 		}
 		m.panes = append(m.panes, p)
+		m.focused = len(m.panes) - 1
 		m.recalculateLayout()
 		return readPane(p)
 
@@ -196,6 +199,7 @@ func (m *model) splitPane() tea.Cmd {
 			return nil
 		}
 		m.panes = append(m.panes, p)
+		m.focused = len(m.panes) - 1
 		m.recalculateLayout()
 		return readPane(p)
 
