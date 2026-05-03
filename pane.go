@@ -61,8 +61,8 @@ func (p *Pane) Resize(x, y, width, height int) {
 	p.y = y
 	p.width = width
 	p.height = height
-	p.term.Resize(width, height)
-	pty.Setsize(p.pty.Master, &pty.Winsize{
+	p.term.Resize(width, height)            // Tells vt10x to resize
+	pty.Setsize(p.pty.Master, &pty.Winsize{ // Tells the SHELL through the PTY to resize
 		Rows: uint16(height),
 		Cols: uint16(width),
 	})
