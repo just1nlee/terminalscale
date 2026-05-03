@@ -228,20 +228,20 @@ func (m *model) recalculateLayout() {
 	case 2:
 		half := (m.width - extraWidth*2) / 2
 		m.panes[0].Resize(0, 0, half, m.height-extraHeight)
-		m.panes[1].Resize(half, 0, m.width-extraWidth*2-half, m.height-extraHeight)
+		m.panes[1].Resize(half+extraWidth, 0, m.width-extraWidth*2-half, m.height-extraHeight)
 	case 3:
 		halfW := (m.width - extraWidth*2) / 2
 		halfH := (m.height - extraHeight*2) / 2
 		m.panes[0].Resize(0, 0, halfW, m.height-extraHeight)
-		m.panes[1].Resize(halfW, 0, m.width-extraWidth*2-halfW, halfH)
-		m.panes[2].Resize(halfW, halfH, m.width-extraWidth*2-halfW, m.height-extraHeight*2-halfH)
+		m.panes[1].Resize(halfW+extraWidth, 0, m.width-extraWidth*2-halfW, halfH)
+		m.panes[2].Resize(halfW+extraWidth, halfH+extraHeight, m.width-extraWidth*2-halfW, m.height-extraHeight*2-halfH)
 	case 4:
 		halfW := (m.width - extraWidth*2) / 2
 		halfH := (m.height - extraHeight*2) / 2
 		m.panes[0].Resize(0, 0, halfW, halfH)
-		m.panes[1].Resize(halfW, 0, m.width-extraWidth*2-halfW, halfH)
-		m.panes[2].Resize(halfW, halfH, m.width-extraWidth*2-halfW, m.height-extraHeight*2-halfH)
-		m.panes[3].Resize(0, halfH, halfW, m.height-extraHeight*2-halfH)
+		m.panes[1].Resize(halfW+extraWidth, 0, m.width-extraWidth*2-halfW, halfH)
+		m.panes[2].Resize(halfW+extraWidth, halfH+extraHeight, m.width-extraWidth*2-halfW, m.height-extraHeight*2-halfH)
+		m.panes[3].Resize(0, halfH+extraHeight, halfW, m.height-extraHeight*2-halfH)
 	}
 }
 
