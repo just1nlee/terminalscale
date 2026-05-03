@@ -113,5 +113,13 @@ func (m model) renderHelpPopup() string {
 	leftPad := strings.Repeat(" ", x)
 	topPad := strings.Repeat("\n", y)
 
-	return topPad + leftPad + strings.ReplaceAll(popup, "\n", "\n"+leftPad)
+	centered := topPad + leftPad + strings.ReplaceAll(popup, "\n", "\n"+leftPad)
+
+	availableH := m.height - StatusBarHeight
+	bottomPad := availableH - y - popupH
+	if bottomPad > 0 {
+		centered += strings.Repeat("\n", bottomPad)
+	}
+
+	return centered
 }
