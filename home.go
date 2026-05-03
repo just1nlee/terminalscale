@@ -15,13 +15,13 @@ var asciiArt = []string{
 }
 
 var hints = []string{
-	"press ? for help",
-	"ctrl+q to exit",
+	"PRESS ? FOR HELP",
+	"CTRL+Q TO EXIT",
 }
 
 func (m model) renderHomeScreen() string {
 	artStyle := lipgloss.NewStyle().
-		Foreground(colorGreenBright).
+		Foreground(colorYellow).
 		Bold(true)
 
 	hintStyle := lipgloss.NewStyle().

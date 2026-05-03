@@ -14,19 +14,21 @@ const (
 
 var (
 	colorBackground  = lipgloss.Color("#0d0d0d")
-	colorGreenBright = lipgloss.Color("#00e5a0")
-	colorGreenDim    = lipgloss.Color("#1a6b4a")
+	colorYellow      = lipgloss.Color("#e5cb30")
+	colorLightYellow = lipgloss.Color("#edd16d")
+	colorLightGray   = lipgloss.Color("#b6b7bb")
+	colorDarkGray    = lipgloss.Color("#2d2d2f")
 	colorWhite       = lipgloss.Color("#ebebeb")
 
 	focusedPaneStyle = lipgloss.NewStyle().
 				Border(lipgloss.NormalBorder()).
-				BorderForeground(colorGreenBright).
+				BorderForeground(colorLightYellow).
 				Padding(PanePaddingV, PanePaddingH).
 				Margin(PaneMarginV, PaneMarginH)
 
 	unfocusedPaneStyle = lipgloss.NewStyle().
 				Border(lipgloss.NormalBorder()).
-				BorderForeground(colorWhite).
+				BorderForeground(colorLightGray).
 				Padding(PanePaddingV, PanePaddingH).
 				Margin(PaneMarginV, PaneMarginH)
 

@@ -372,7 +372,7 @@ func (m model) renderStatusBar() string {
 
 	center := lipgloss.NewStyle().
 		Background(lipgloss.Color("#1a1a1a")).
-		Foreground(colorGreenDim).
+		Foreground(colorLightYellow).
 		Bold(true).
 		Render("TERMINALSCALE")
 
