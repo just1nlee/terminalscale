@@ -219,26 +219,29 @@ func (m *model) focusDown() {
 }
 
 func (m *model) recalculateLayout() {
+	extraWidth := paneExtraW()
+	extraHeight := paneExtraH()
+
 	switch len(m.panes) {
 	case 1:
-		m.panes[0].Resize(0, 0, m.width, m.height)
+		m.panes[0].Resize(0, 0, m.width-extraWidth, m.height-extraHeight)
 	case 2:
-		half := m.width / 2
-		m.panes[0].Resize(0, 0, half, m.height)
-		m.panes[1].Resize(half, 0, m.width-half, m.height)
+		half := (m.width - extraWidth*2) / 2
+		m.panes[0].Resize(0, 0, half, m.height-extraHeight)
+		m.panes[1].Resize(half, 0, m.width-extraWidth*2-half, m.height-extraHeight)
 	case 3:
-		halfW := m.width / 2
-		halfH := m.height / 2
-		m.panes[0].Resize(0, 0, halfW, m.height)
-		m.panes[1].Resize(halfW, 0, m.width-halfW, halfH)
-		m.panes[2].Resize(halfW, halfH, m.width-halfW, m.height-halfH)
+		halfW := (m.width - extraWidth*2) / 2
+		halfH := (m.height - extraHeight*2) / 2
+		m.panes[0].Resize(0, 0, halfW, m.height-extraHeight)
+		m.panes[1].Resize(halfW, 0, m.width-extraWidth*2-halfW, halfH)
+		m.panes[2].Resize(halfW, halfH, m.width-extraWidth*2-halfW, m.height-extraHeight*2-halfH)
 	case 4:
-		halfW := m.width / 2
-		halfH := m.height / 2
+		halfW := (m.width - extraWidth*2) / 2
+		halfH := (m.height - extraHeight*2) / 2
 		m.panes[0].Resize(0, 0, halfW, halfH)
-		m.panes[1].Resize(halfW, 0, m.width-halfW, halfH)
-		m.panes[2].Resize(halfW, halfH, m.width-halfW, m.height-halfH)
-		m.panes[3].Resize(0, halfH, halfW, m.height-halfH)
+		m.panes[1].Resize(halfW, 0, m.width-extraWidth*2-halfW, halfH)
+		m.panes[2].Resize(halfW, halfH, m.width-extraWidth*2-halfW, m.height-extraHeight*2-halfH)
+		m.panes[3].Resize(0, halfH, halfW, m.height-extraHeight*2-halfH)
 	}
 }
 
@@ -310,8 +313,13 @@ func (m model) View() tea.View {
 
 	// Combine pane renders using lipgloss by joing joining pane strings side by side
 	var rendered []string
-	for _, p := range m.panes {
-		rendered = append(rendered, renderPane(p))
+	for i, p := range m.panes {
+		content := renderPane(p)
+		if i == m.focused {
+			rendered = append(rendered, focusedPaneStyle.Render(content))
+		} else {
+			rendered = append(rendered, unfocusedPaneStyle.Render(content))
+		}
 	}
 
 	var content string
@@ -340,8 +348,12 @@ func (m model) View() tea.View {
 	visible := focused.term.CursorVisible()
 	focused.term.Unlock()
 
+	// Calculate cursor position
 	if visible {
-		v.Cursor = tea.NewCursor(focused.x+cursor.X, focused.y+cursor.Y)
+		v.Cursor = tea.NewCursor(
+			focused.x+CursorOffsetX+cursor.X,
+			focused.y+CursorOffsetY+cursor.Y,
+		)
 	}
 
 	return v
