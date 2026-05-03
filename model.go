@@ -16,13 +16,14 @@ type workspace struct {
 }
 
 type model struct {
-	workspaces       [10]workspace
-	currentWorkspace int
-	width            int
-	height           int
-	paneMode         bool
-	lastKey          string
-	showHelp         bool
+	workspaces        [10]workspace
+	currentWorkspace  int
+	width             int
+	height            int
+	paneMode          bool
+	lastPaneModeKey   string
+	lastInsertModeKey string
+	showHelp          bool
 }
 
 type ptyOutput struct {
@@ -64,9 +65,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// Toggle pane mode
-		if !m.paneMode && msg.String() == "esc" && m.lastKey == "esc" {
+		if !m.paneMode && key == "esc" && m.lastInsertModeKey == "esc" {
 			m.paneMode = true
-			m.lastKey = ""
+			m.lastInsertModeKey = ""
 			return m, nil
 		}
 		if m.paneMode {
@@ -74,18 +75,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if key == "?" || key == "esc" {
 					m.showHelp = false
 				}
-				m.lastKey = key
+				m.lastPaneModeKey = key
 				return m, nil
 			}
 
-			// Toggle insert mode (only when a pane exists to receive input)
-			if key == "i" && m.lastKey == "i" && len(m.ws().panes) > 0 {
+			// Toggle insert mode
+			if key == "i" && m.lastPaneModeKey == "i" && len(m.ws().panes) > 0 {
 				m.paneMode = false
 				m.showHelp = false
-				m.lastKey = ""
+				m.lastPaneModeKey = ""
 				return m, nil
 			}
-			m.lastKey = key
+			m.lastPaneModeKey = key
 			switch key {
 			case "k", "w":
 				m.focusUp()
@@ -113,8 +114,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Record key for double-press detection for insert mode
-		m.lastKey = key
+		// Track last key for esc+esc detection in insert mode
+		m.lastInsertModeKey = key
 
 		if len(m.ws().panes) == 0 {
 			return m, nil
