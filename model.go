@@ -51,8 +51,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		if msg.String() == "ctrl+n" {
-			m.splitPane()
-			return m, nil
+			cmd := m.splitPane()
+			return m, cmd
 		}
 		// Cycle focus
 		if msg.String() == "ctrl+]" {
@@ -82,6 +82,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				focused.pty.Master.Write([]byte("\x1b[C"))
 			case tea.KeyLeft:
 				focused.pty.Master.Write([]byte("\x1b[D"))
+			case tea.KeyEscape:
+				focused.pty.Master.Write([]byte("\x1b"))
 			}
 		}
 	case ptyOutput:
@@ -96,25 +98,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *model) splitPane() {
+func (m *model) splitPane() tea.Cmd {
 	switch len(m.panes) {
 	case 1:
 		// Check min size
 		if m.width/2 < MinPaneWidth {
-			return
+			return nil
 		}
 		half := m.width / 2
 		m.panes[0].Resize(0, 0, half, m.height)
 		p, err := NewPane(half, 0, m.width-half, m.height)
 		if err != nil {
-			return
+			return nil
 		}
 		m.panes = append(m.panes, p)
+		return readPane(len(m.panes)-1, p.pty.Master)
 
 	case 2:
 		// Split right pane vertically
 		if m.height/2 < MinPaneHeight {
-			return
+			return nil
 		}
 		half := m.height / 2
 		rightX := m.panes[1].x
@@ -122,24 +125,30 @@ func (m *model) splitPane() {
 		m.panes[1].Resize(rightX, 0, rightW, half)
 		p, err := NewPane(rightX, half, rightW, m.height-half)
 		if err != nil {
-			return
+			return nil
 		}
 		m.panes = append(m.panes, p)
+		return readPane(len(m.panes)-1, p.pty.Master)
+
 	case 3:
 		// Split left pane vertically
 		if m.height/2 < MinPaneHeight {
-			return
+			return nil
 		}
 		half := m.height / 2
 		m.panes[0].Resize(0, 0, m.panes[0].width, half)
 		p, err := NewPane(0, half, m.panes[0].width, m.height-half)
 		if err != nil {
-			return
+			return nil
 		}
 		m.panes = append(m.panes, p)
+		return readPane(len(m.panes)-1, p.pty.Master)
 
 	case 4:
+		return nil
 	}
+
+	return nil
 }
 
 func (m *model) recalculateLayout() {
