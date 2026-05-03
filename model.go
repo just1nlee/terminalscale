@@ -336,14 +336,31 @@ func renderPane(p *Pane) string {
 }
 
 func (m model) renderStatusBar() string {
-	content := " terminalscale "
-	bar := statusBarStyle.Render(content)
-
-	// Pad to full width
-	padLen := m.width - lipgloss.Width(bar)
-	if padLen > 0 {
-		bar += statusBarStyle.Render(strings.Repeat(" ", padLen))
+	var mode string
+	if m.paneMode {
+		mode = " PANE MODE "
+	} else {
+		mode = " -- INSERT -- "
 	}
+
+	center := lipgloss.NewStyle().
+		Background(lipgloss.Color("#1a1a1a")).
+		Foreground(colorGreenDim).
+		Bold(true).
+		Render("TERMINALSCALE")
+
+	left := statusBarStyle.Render(mode)
+
+	leftW := lipgloss.Width(left)
+	centerW := lipgloss.Width(center)
+
+	leftPad := (m.width / 2) - leftW - (centerW / 2)
+	rightPad := m.width - leftW - leftPad - centerW
+
+	bar := left +
+		statusBarStyle.Render(strings.Repeat(" ", leftPad)) +
+		center +
+		statusBarStyle.Render(strings.Repeat(" ", rightPad))
 
 	return bar
 }
