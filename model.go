@@ -196,9 +196,17 @@ func (m *model) focusLeft() {
 	}
 }
 
-func (m *model) focusRight() {}
-func (m *model) focusUp()    {}
-func (m *model) focusDown()  {}
+func (m *model) focusRight() {
+	for i, p := range m.panes {
+		if p.x > m.panes[m.focused].x {
+			m.focused = i
+			return
+		}
+	}
+}
+
+func (m *model) focusUp()   {}
+func (m *model) focusDown() {}
 
 func (m *model) recalculateLayout() {
 	switch len(m.panes) {
