@@ -2,29 +2,20 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/hinshun/vt10x"
 )
 
 func main() {
-	// PTY pair handler
-	ptmx, err := NewPTY()
+	firstPane, err := NewPane(0, 0, 80, 24)
 	if err != nil {
 		panic(err)
 	}
 
-	defer ptmx.Close()
-
-	ptmx.HandleResize()
-
-	term := vt10x.New(vt10x.WithSize(80, 24), vt10x.WithWriter(io.Discard))
-
 	m := model{
-		pty:  ptmx,
-		term: term,
+		panes:   []*Pane{firstPane},
+		focused: 0,
 	}
 
 	p := tea.NewProgram(m)
