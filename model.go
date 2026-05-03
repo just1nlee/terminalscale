@@ -208,10 +208,12 @@ func (m *model) handleIPC(req IPCRequest) (IPCResponse, tea.Cmd) {
 		return IPCResponse{Error: "pane not found"}, nil
 
 	case "write_pane":
+		text := strings.ReplaceAll(req.Text, `\n`, "\n")
+		text = strings.ReplaceAll(text, `\r`, "\r")
 		for wi := range m.workspaces {
 			for _, p := range m.workspaces[wi].panes {
 				if p.ID == req.PaneID {
-					_, err := p.pty.Master.Write([]byte(req.Text))
+					_, err := p.pty.Master.Write([]byte(text))
 					if err != nil {
 						return IPCResponse{Error: err.Error()}, nil
 					}
