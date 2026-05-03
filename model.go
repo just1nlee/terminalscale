@@ -161,9 +161,9 @@ func (m *model) splitPane() tea.Cmd {
 			return nil
 		}
 		halfH := (m.height - extraHeight*2) / 2
-		rightX := m.panes[1].x
-		rightW := m.panes[1].width
-		p, err := NewPane(rightX, halfH+extraHeight, rightW, m.height-extraHeight*2-halfH)
+		leftX := m.panes[0].x
+		leftW := m.panes[0].width
+		p, err := NewPane(leftX, halfH+extraHeight, leftW, m.height-extraHeight*2-halfH)
 		if err != nil {
 			return nil
 		}
@@ -176,8 +176,9 @@ func (m *model) splitPane() tea.Cmd {
 			return nil
 		}
 		halfH := (m.height - extraHeight*2) / 2
-		leftW := m.panes[0].width
-		p, err := NewPane(0, halfH+extraHeight, leftW, m.height-extraHeight*2-halfH)
+		rightX := m.panes[1].x
+		rightW := m.panes[1].width
+		p, err := NewPane(rightX, halfH+extraHeight, rightW, m.height-extraHeight*2-halfH)
 		if err != nil {
 			return nil
 		}
@@ -262,16 +263,16 @@ func (m *model) recalculateLayout() {
 	case 3:
 		halfW := (m.width - extraWidth*2) / 2
 		halfH := (h - extraHeight*2) / 2
-		m.panes[0].Resize(0, 0, halfW, h-extraHeight)
-		m.panes[1].Resize(halfW+extraWidth, 0, m.width-extraWidth*2-halfW, halfH)
-		m.panes[2].Resize(halfW+extraWidth, halfH+extraHeight, m.width-extraWidth*2-halfW, h-extraHeight*2-halfH)
+		m.panes[0].Resize(0, 0, halfW, halfH)
+		m.panes[1].Resize(halfW+extraWidth, 0, m.width-extraWidth*2-halfW, h-extraHeight)
+		m.panes[2].Resize(0, halfH+extraHeight, halfW, h-extraHeight*2-halfH)
 	case 4:
 		halfW := (m.width - extraWidth*2) / 2
 		halfH := (h - extraHeight*2) / 2
 		m.panes[0].Resize(0, 0, halfW, halfH)
 		m.panes[1].Resize(halfW+extraWidth, 0, m.width-extraWidth*2-halfW, halfH)
-		m.panes[2].Resize(halfW+extraWidth, halfH+extraHeight, m.width-extraWidth*2-halfW, h-extraHeight*2-halfH)
-		m.panes[3].Resize(0, halfH+extraHeight, halfW, h-extraHeight*2-halfH)
+		m.panes[2].Resize(0, halfH+extraHeight, halfW, h-extraHeight*2-halfH)
+		m.panes[3].Resize(halfW+extraWidth, halfH+extraHeight, m.width-extraWidth*2-halfW, h-extraHeight*2-halfH)
 	}
 }
 
@@ -391,11 +392,11 @@ func (m model) View() tea.View {
 	case 2:
 		content = lipgloss.JoinHorizontal(lipgloss.Top, rendered[0], rendered[1])
 	case 3:
-		right := lipgloss.JoinVertical(lipgloss.Left, rendered[1], rendered[2])
-		content = lipgloss.JoinHorizontal(lipgloss.Top, rendered[0], right)
+		left := lipgloss.JoinVertical(lipgloss.Left, rendered[0], rendered[2])
+		content = lipgloss.JoinHorizontal(lipgloss.Top, left, rendered[1])
 	case 4:
-		left := lipgloss.JoinVertical(lipgloss.Left, rendered[0], rendered[3])
-		right := lipgloss.JoinVertical(lipgloss.Left, rendered[1], rendered[2])
+		left := lipgloss.JoinVertical(lipgloss.Left, rendered[0], rendered[2])
+		right := lipgloss.JoinVertical(lipgloss.Left, rendered[1], rendered[3])
 		content = lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 	}
 
