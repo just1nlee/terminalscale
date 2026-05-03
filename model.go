@@ -198,7 +198,9 @@ func (m *model) closePane() {
 
 	m.panes[m.focused].Close()
 
-	m.panes = append(m.panes[:m.focused], m.panes[m.focused+1:]...)
+	copy(m.panes[m.focused:], m.panes[m.focused+1:]) // Shifts elements left
+	m.panes[len(m.panes)-1] = nil                    // nil the last slot
+	m.panes = m.panes[:len(m.panes)-1]               // Shrink the array
 	if m.focused >= len(m.panes) {
 		m.focused = len(m.panes) - 1
 	}
