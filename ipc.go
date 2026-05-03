@@ -13,9 +13,10 @@ import (
 const SockPath = "/tmp/terminalscale.sock"
 
 type IPCRequest struct {
-	Action string `json:"action"`
-	PaneID int    `json:"pane_id,omitempty"`
-	Text   string `json:"text,omitempty"`
+	Action      string `json:"action"`
+	PaneID      int    `json:"pane_id,omitempty"`
+	Text        string `json:"text,omitempty"`
+	WorkspaceID int    `json:"workspace_id,omitempty"`
 }
 
 type IPCPaneInfo struct {
@@ -25,10 +26,11 @@ type IPCPaneInfo struct {
 }
 
 type IPCResponse struct {
-	PaneID  int           `json:"pane_id,omitempty"`
-	Content string        `json:"content,omitempty"`
-	Panes   []IPCPaneInfo `json:"panes,omitempty"`
-	Error   string        `json:"error,omitempty"`
+	PaneID      int           `json:"pane_id,omitempty"`
+	Content     string        `json:"content,omitempty"`
+	Panes       []IPCPaneInfo `json:"panes,omitempty"`
+	WorkspaceID int           `json:"workspace_id,omitempty"`
+	Error       string        `json:"error,omitempty"`
 }
 
 // ipcMsg injects an IPC request into the Bubble Tea update loop.

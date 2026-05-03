@@ -230,6 +230,21 @@ func (m *model) handleIPC(req IPCRequest) (IPCResponse, tea.Cmd) {
 		}
 		return IPCResponse{Panes: infos}, nil
 
+	case "switch_workspace":
+		wsKey := req.WorkspaceID
+		if wsKey < 0 || wsKey > 9 {
+			return IPCResponse{Error: "workspace_id must be 0-9"}, nil
+		}
+		var id int
+		if wsKey == 0 {
+			id = 9
+		} else {
+			id = wsKey - 1
+		}
+		m.currentWorkspace = id
+		m.recalculateLayout()
+		return IPCResponse{WorkspaceID: wsKey}, nil
+
 	default:
 		return IPCResponse{Error: "unknown action: " + req.Action}, nil
 	}

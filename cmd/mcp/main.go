@@ -32,9 +32,10 @@ type rpcErr struct {
 
 // IPC types — mirrors ipc.go in the multiplexer
 type ipcRequest struct {
-	Action string `json:"action"`
-	PaneID int    `json:"pane_id,omitempty"`
-	Text   string `json:"text,omitempty"`
+	Action      string `json:"action"`
+	PaneID      int    `json:"pane_id,omitempty"`
+	Text        string `json:"text,omitempty"`
+	WorkspaceID int    `json:"workspace_id,omitempty"`
 }
 
 type ipcPaneInfo struct {
@@ -44,10 +45,11 @@ type ipcPaneInfo struct {
 }
 
 type ipcResponse struct {
-	PaneID  int           `json:"pane_id,omitempty"`
-	Content string        `json:"content,omitempty"`
-	Panes   []ipcPaneInfo `json:"panes,omitempty"`
-	Error   string        `json:"error,omitempty"`
+	PaneID      int           `json:"pane_id,omitempty"`
+	Content     string        `json:"content,omitempty"`
+	Panes       []ipcPaneInfo `json:"panes,omitempty"`
+	WorkspaceID int           `json:"workspace_id,omitempty"`
+	Error       string        `json:"error,omitempty"`
 }
 
 func callIPC(req ipcRequest) (ipcResponse, error) {
@@ -65,6 +67,17 @@ func callIPC(req ipcRequest) (ipcResponse, error) {
 
 var tools = map[string]any{
 	"tools": []any{
+		map[string]any{
+			"name":        "switch_workspace",
+			"description": "Switch the active workspace in the multiplexer. Workspaces are numbered as they appear on the keyboard: 1-9 for the first nine workspaces, 0 for the tenth.",
+			"inputSchema": map[string]any{
+				"type":     "object",
+				"required": []string{"workspace_id"},
+				"properties": map[string]any{
+					"workspace_id": map[string]any{"type": "integer", "description": "Workspace index 0-9 to switch to"},
+				},
+			},
+		},
 		map[string]any{
 			"name":        "create_pane",
 			"description": "Create a new terminal pane in the multiplexer. Returns the new pane ID.",
@@ -114,12 +127,26 @@ var tools = map[string]any{
 
 func handleTool(name string, rawArgs json.RawMessage) (string, error) {
 	var args struct {
-		PaneID int    `json:"pane_id"`
-		Text   string `json:"text"`
+		PaneID      int    `json:"pane_id"`
+		Text        string `json:"text"`
+		WorkspaceID int    `json:"workspace_id"`
 	}
 	json.Unmarshal(rawArgs, &args)
 
 	switch name {
+	case "switch_workspace":
+		if args.WorkspaceID < 0 || args.WorkspaceID > 9 {
+			return "", fmt.Errorf("workspace_id must be 0-9")
+		}
+		resp, err := callIPC(ipcRequest{Action: "switch_workspace", WorkspaceID: args.WorkspaceID})
+		if err != nil {
+			return "", err
+		}
+		if resp.Error != "" {
+			return resp.Error, nil
+		}
+		return fmt.Sprintf("Switched to workspace %d", resp.WorkspaceID), nil
+
 	case "create_pane":
 		resp, err := callIPC(ipcRequest{Action: "create_pane"})
 		if err != nil {
