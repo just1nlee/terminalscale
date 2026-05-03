@@ -17,6 +17,7 @@ type model struct {
 	height   int
 	paneMode bool
 	lastKey  string
+	showHelp bool
 }
 
 type ptyOutput struct {
@@ -60,9 +61,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if m.paneMode {
+			if m.showHelp {
+				if key == "?" || key == "esc" {
+					m.showHelp = false
+				}
+				m.lastKey = key
+				return m, nil
+			}
+
 			// Toggle insert mode (only when a pane exists to receive input)
 			if key == "i" && m.lastKey == "i" && len(m.panes) > 0 {
 				m.paneMode = false
+				m.showHelp = false
 				m.lastKey = ""
 				return m, nil
 			}
@@ -81,6 +91,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd
 			case "q":
 				m.closePane()
+			case "?":
+				m.showHelp = !m.showHelp
+				return m, nil
 			}
 			return m, nil
 		}
@@ -404,12 +417,6 @@ func (m model) View() tea.View {
 		return v
 	}
 
-	if len(m.panes) == 0 {
-		v := tea.NewView(lipgloss.JoinVertical(lipgloss.Left, m.renderHomeScreen(), m.renderStatusBar()))
-		v.AltScreen = true
-		return v
-	}
-
 	// Combine pane renders using lipgloss by joing joining pane strings side by side
 	var rendered []string
 	for i, p := range m.panes {
@@ -436,24 +443,36 @@ func (m model) View() tea.View {
 		content = lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 	}
 
+	var screen string
+	if len(m.panes) == 0 {
+		screen = m.renderHomeScreen()
+	} else {
+		screen = content
+	}
+
+	if m.showHelp {
+		screen = m.renderHelpPopup()
+	}
+
 	// Update view with the built string
-	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Left, content, m.renderStatusBar()))
+	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Left, screen, m.renderStatusBar()))
 
 	v.AltScreen = true
 
 	// Pass cursor position to focused pane from vt10x to bubbletea
-	focused := m.panes[m.focused]
-	focused.term.Lock()
-	cursor := focused.term.Cursor()
-	visible := focused.term.CursorVisible()
-	focused.term.Unlock()
+	if len(m.panes) > 0 {
+		focused := m.panes[m.focused]
+		focused.term.Lock()
+		cursor := focused.term.Cursor()
+		visible := focused.term.CursorVisible()
+		focused.term.Unlock()
 
-	// Calculate cursor position
-	if visible {
-		v.Cursor = tea.NewCursor(
-			focused.x+CursorOffsetX+cursor.X,
-			focused.y+CursorOffsetY+cursor.Y,
-		)
+		if visible {
+			v.Cursor = tea.NewCursor(
+				focused.x+CursorOffsetX+cursor.X,
+				focused.y+CursorOffsetY+cursor.Y,
+			)
+		}
 	}
 
 	return v

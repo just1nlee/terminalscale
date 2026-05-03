@@ -71,3 +71,47 @@ func (m model) renderHomeScreen() string {
 
 	return sb.String()
 }
+
+func (m model) renderHelpPopup() string {
+	commands := []string{
+		"n        open terminal pane",
+		"?        toggle this help menu",
+		"esc esc  enter pane mode",
+		"i i      exit pane mode",
+		"h/j/k/l  focus left/down/up/right",
+		"q        close focused pane",
+		"ctrl+q   quit",
+	}
+
+	titleStyle := lipgloss.NewStyle().
+		Foreground(colorLightYellow).
+		Bold(true)
+
+	itemStyle := lipgloss.NewStyle().
+		Foreground(colorWhite)
+
+	var lines []string
+	lines = append(lines, titleStyle.Render("KEYBINDINGS"))
+	lines = append(lines, "")
+	for _, cmd := range commands {
+		lines = append(lines, itemStyle.Render(cmd))
+	}
+
+	popupStyle := lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(colorDarkGray).
+		Padding(1, 3)
+
+	popup := popupStyle.Render(strings.Join(lines, "\n"))
+
+	// Center the popup over the screen
+	popupW := lipgloss.Width(popup)
+	popupH := lipgloss.Height(popup)
+	x := (m.width - popupW) / 2
+	y := (m.height - StatusBarHeight - popupH) / 2
+
+	leftPad := strings.Repeat(" ", x)
+	topPad := strings.Repeat("\n", y)
+
+	return topPad + leftPad + strings.ReplaceAll(popup, "\n", "\n"+leftPad)
+}
