@@ -122,6 +122,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case ptyOutput:
+		if msg.index >= len(m.panes) {
+			return m, nil
+		}
 		m.panes[msg.index].term.Write([]byte(msg.data)) // feeds raw bytes from PTY into vt10x
 		return m, readPane(msg.index, m.panes[msg.index].pty.Master)
 	case tea.WindowSizeMsg:
