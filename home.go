@@ -77,11 +77,14 @@ func (m model) renderHelpPopup() string {
 	type entry struct{ key, desc string }
 	commands := []entry{
 		{"?", "TOGGLE HELP MENU"},
-		{"n", "CREATE TERMINAL PANE"},
-		{"esc + esc", "ENTER PANE MODE"},
 		{"i + i", "ENTER INSERT MODE"},
+		{"", ""},
+		{"esc + esc", "ENTER PANE MODE"},
+		{"n", "CREATE TERMINAL PANE"},
 		{"h/j/k/l", "FOCUS LEFT/DOWN/UP/RIGHT"},
 		{"q", "CLOSE FOCUSED PANE"},
+		{"1-9, 0", "SWITCH WORKSPACE"},
+		{"", ""},
 		{"ctrl+q", "QUIT TERMINALSCALE"},
 	}
 
