@@ -205,7 +205,16 @@ func (m *model) focusRight() {
 	}
 }
 
-func (m *model) focusUp()   {}
+func (m *model) focusUp() {
+	for i, p := range m.panes {
+		// If pane is below a pane and the pane is in the same column
+		if p.y < m.panes[m.focused].y && p.x == m.panes[m.focused].x {
+			m.focused = i
+			return
+		}
+	}
+}
+
 func (m *model) focusDown() {}
 
 func (m *model) recalculateLayout() {
