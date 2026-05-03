@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sync/atomic"
 
 	"github.com/creack/pty"
 	"github.com/hinshun/vt10x"
@@ -16,7 +17,10 @@ const (
 	MinPaneHeight = 12
 )
 
+var paneIDCounter int64
+
 type Pane struct {
+	ID     int
 	pty    *PTY
 	term   vt10x.Terminal
 	x      int
@@ -47,6 +51,7 @@ func NewPane(x, y, width, height int) (*Pane, error) {
 	})
 
 	return &Pane{
+		ID:     int(atomic.AddInt64(&paneIDCounter, 1)),
 		pty:    p,
 		term:   term,
 		x:      x,

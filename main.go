@@ -23,6 +23,7 @@ func main() {
 	}
 
 	p := tea.NewProgram(m)
+	go serveIPC(p)
 	if _, err := p.Run(); err != nil {
 		fmt.Println("error running program:", err)
 		os.Exit(1)

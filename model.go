@@ -163,8 +163,62 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.recalculateLayout()
+	case ipcMsg:
+		resp, cmd := m.handleIPC(msg.req)
+		msg.respCh <- resp
+		return m, cmd
 	}
 	return m, nil
+}
+
+func (m *model) handleIPC(req IPCRequest) (IPCResponse, tea.Cmd) {
+	switch req.Action {
+	case "create_pane":
+		prevLen := len(m.ws().panes)
+		cmd := m.splitPane()
+		ws := m.ws()
+		if len(ws.panes) > prevLen {
+			return IPCResponse{PaneID: ws.panes[len(ws.panes)-1].ID}, cmd
+		}
+		return IPCResponse{Error: "cannot create pane (max 4 or terminal too small)"}, nil
+
+	case "read_pane":
+		for wi := range m.workspaces {
+			for _, p := range m.workspaces[wi].panes {
+				if p.ID == req.PaneID {
+					return IPCResponse{PaneID: p.ID, Content: readPanePlain(p)}, nil
+				}
+			}
+		}
+		return IPCResponse{Error: "pane not found"}, nil
+
+	case "close_pane":
+		for wi := range m.workspaces {
+			for i, p := range m.workspaces[wi].panes {
+				if p.ID == req.PaneID {
+					saved := m.currentWorkspace
+					m.currentWorkspace = wi
+					m.ws().focused = i
+					m.closePane()
+					m.currentWorkspace = saved
+					return IPCResponse{PaneID: req.PaneID}, nil
+				}
+			}
+		}
+		return IPCResponse{Error: "pane not found"}, nil
+
+	case "list_panes":
+		var infos []IPCPaneInfo
+		for wi := range m.workspaces {
+			for _, p := range m.workspaces[wi].panes {
+				infos = append(infos, IPCPaneInfo{ID: p.ID, Width: p.width, Height: p.height})
+			}
+		}
+		return IPCResponse{Panes: infos}, nil
+
+	default:
+		return IPCResponse{Error: "unknown action: " + req.Action}, nil
+	}
 }
 
 func (m *model) splitPane() tea.Cmd {
