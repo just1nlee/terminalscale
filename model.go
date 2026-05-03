@@ -206,7 +206,8 @@ func (m *model) closePane() {
 
 func (m *model) focusLeft() {
 	for i, p := range m.panes {
-		if p.x < m.panes[m.focused].x {
+		// If focused pane is to the right of another pane and the panes are in the same row (same y)
+		if p.x < m.panes[m.focused].x && p.y == m.panes[m.focused].y {
 			m.focused = i
 			return
 		}
@@ -215,7 +216,8 @@ func (m *model) focusLeft() {
 
 func (m *model) focusRight() {
 	for i, p := range m.panes {
-		if p.x > m.panes[m.focused].x {
+		// If focused pane is to the left of another pane and the panes are in the same row (same y)
+		if p.x > m.panes[m.focused].x && p.y == m.panes[m.focused].y {
 			m.focused = i
 			return
 		}
