@@ -139,26 +139,55 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) splitPane() tea.Cmd {
+	extraWidth := paneExtraW()
+	extraHeight := paneExtraH()
+
 	switch len(m.panes) {
 	case 1:
 		if m.width/2 < MinPaneWidth {
 			return nil
 		}
-	case 2, 3:
+		half := (m.width - extraWidth*2) / 2
+		p, err := NewPane(half+extraWidth, 0, m.width-extraWidth*2-half, m.height-extraHeight)
+		if err != nil {
+			return nil
+		}
+		m.panes = append(m.panes, p)
+		m.recalculateLayout()
+		return readPane(p)
+
+	case 2:
 		if m.height/2 < MinPaneHeight {
 			return nil
 		}
+		halfH := (m.height - extraHeight*2) / 2
+		rightX := m.panes[1].x
+		rightW := m.panes[1].width
+		p, err := NewPane(rightX, halfH+extraHeight, rightW, m.height-extraHeight*2-halfH)
+		if err != nil {
+			return nil
+		}
+		m.panes = append(m.panes, p)
+		m.recalculateLayout()
+		return readPane(p)
+
+	case 3:
+		if m.height/2 < MinPaneHeight {
+			return nil
+		}
+		halfH := (m.height - extraHeight*2) / 2
+		leftW := m.panes[0].width
+		p, err := NewPane(0, halfH+extraHeight, leftW, m.height-extraHeight*2-halfH)
+		if err != nil {
+			return nil
+		}
+		m.panes = append(m.panes, p)
+		m.recalculateLayout()
+		return readPane(p)
+
 	default:
 		return nil
 	}
-
-	p, err := NewPane(0, 0, 1, 1)
-	if err != nil {
-		return nil
-	}
-	m.panes = append(m.panes, p)
-	m.recalculateLayout()
-	return readPane(p)
 }
 
 func (m *model) closePane() {
@@ -259,10 +288,12 @@ func renderPane(p *Pane) string {
 	p.term.Lock()
 	defer p.term.Unlock()
 
+	width, height := p.term.Size()
+
 	// String builder reads from vt10x's internal 2D cell grid
 	var sb strings.Builder
-	for y := 0; y < p.height; y++ {
-		for x := 0; x < p.width; x++ {
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
 			cell := p.term.Cell(x, y)
 			ch := cell.Char
 			if ch == 0 {
@@ -296,7 +327,7 @@ func renderPane(p *Pane) string {
 			sb.WriteString(style.Render(string(ch)))
 		}
 
-		if y < p.height-1 {
+		if y < height-1 {
 			sb.WriteByte('\n')
 		}
 	}

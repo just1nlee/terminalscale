@@ -14,7 +14,9 @@ func main() {
 		w, h = 80, 24
 	}
 
-	firstPane, err := NewPane(0, 0, w, h)
+	extraW := paneExtraW()
+	extraH := paneExtraH()
+	firstPane, err := NewPane(0, 0, w-extraW, h-extraH)
 	if err != nil {
 		panic(err)
 	}
