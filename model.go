@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"image/color"
-	"os"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -21,27 +20,26 @@ type model struct {
 }
 
 type ptyOutput struct {
-	index int
-	data  string
+	pane *Pane
+	data string
 }
 
 // Cmd that reads up to 4096 bytes from PTY, returns as a Msg for Update() to read
-// Takes PTY handler type as parameters
-func readPane(index int, master *os.File) tea.Cmd {
+func readPane(p *Pane) tea.Cmd {
 	return func() tea.Msg {
 		buf := make([]byte, 4096)
-		n, err := master.Read(buf)
+		n, err := p.pty.Master.Read(buf)
 		if err != nil {
 			return nil
 		}
-		return ptyOutput{index: index, data: string(buf[:n])}
+		return ptyOutput{pane: p, data: string(buf[:n])}
 	}
 }
 
 func (m model) Init() tea.Cmd {
 	var cmds []tea.Cmd
-	for i, p := range m.panes {
-		cmds = append(cmds, readPane(i, p.pty.Master))
+	for _, p := range m.panes {
+		cmds = append(cmds, readPane(p))
 	}
 	return tea.Batch(cmds...)
 }
@@ -119,11 +117,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case ptyOutput:
-		if msg.index >= len(m.panes) {
-			return m, nil
+		idx := -1
+		for i, p := range m.panes {
+			if p == msg.pane {
+				idx = i
+				break
+			}
 		}
-		m.panes[msg.index].term.Write([]byte(msg.data)) // feeds raw bytes from PTY into vt10x
-		return m, readPane(msg.index, m.panes[msg.index].pty.Master)
+		if idx == -1 {
+			return m, nil // pane was closed, discard in-flight output
+		}
+		m.panes[idx].term.Write([]byte(msg.data)) // feeds raw bytes from PTY into vt10x
+		return m, readPane(m.panes[idx])
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -147,7 +152,7 @@ func (m *model) splitPane() tea.Cmd {
 			return nil
 		}
 		m.panes = append(m.panes, p)
-		return readPane(len(m.panes)-1, p.pty.Master)
+		return readPane(p)
 
 	case 2:
 		// Split right pane vertically
@@ -163,7 +168,7 @@ func (m *model) splitPane() tea.Cmd {
 			return nil
 		}
 		m.panes = append(m.panes, p)
-		return readPane(len(m.panes)-1, p.pty.Master)
+		return readPane(p)
 
 	case 3:
 		// Split left pane vertically
@@ -177,7 +182,7 @@ func (m *model) splitPane() tea.Cmd {
 			return nil
 		}
 		m.panes = append(m.panes, p)
-		return readPane(len(m.panes)-1, p.pty.Master)
+		return readPane(p)
 
 	case 4:
 		return nil
