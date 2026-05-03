@@ -122,6 +122,17 @@ var tools = map[string]any{
 				},
 			},
 		},
+		map[string]any{
+			"name":        "focus_pane",
+			"description": "Focus a terminal pane by ID, switching to its workspace if necessary.",
+			"inputSchema": map[string]any{
+				"type":     "object",
+				"required": []string{"pane_id"},
+				"properties": map[string]any{
+					"pane_id": map[string]any{"type": "integer", "description": "Pane ID to focus"},
+				},
+			},
+		},
 	},
 }
 
@@ -200,6 +211,16 @@ func handleTool(name string, rawArgs json.RawMessage) (string, error) {
 			return resp.Error, nil
 		}
 		return fmt.Sprintf("Wrote to pane %d", resp.PaneID), nil
+
+	case "focus_pane":
+		resp, err := callIPC(ipcRequest{Action: "focus_pane", PaneID: args.PaneID})
+		if err != nil {
+			return "", err
+		}
+		if resp.Error != "" {
+			return resp.Error, nil
+		}
+		return fmt.Sprintf("Focused pane %d", resp.PaneID), nil
 
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)

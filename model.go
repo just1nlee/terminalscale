@@ -230,6 +230,19 @@ func (m *model) handleIPC(req IPCRequest) (IPCResponse, tea.Cmd) {
 		}
 		return IPCResponse{Panes: infos}, nil
 
+	case "focus_pane":
+		for wi := range m.workspaces {
+			for i, p := range m.workspaces[wi].panes {
+				if p.ID == req.PaneID {
+					m.currentWorkspace = wi
+					m.workspaces[wi].focused = i
+					m.recalculateLayout()
+					return IPCResponse{PaneID: req.PaneID}, nil
+				}
+			}
+		}
+		return IPCResponse{Error: "pane not found"}, nil
+
 	case "switch_workspace":
 		wsKey := req.WorkspaceID
 		if wsKey < 0 || wsKey > 9 {
