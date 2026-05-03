@@ -25,10 +25,11 @@ func main() {
 
 	// Model needs to store actual size for layout calculations
 	m := model{
-		panes:   []*Pane{firstPane},
-		focused: 0,
-		width:   w,
-		height:  h,
+		panes:    []*Pane{firstPane},
+		focused:  0,
+		width:    w,
+		height:   h,
+		paneMode: true,
 	}
 
 	p := tea.NewProgram(m)
