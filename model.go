@@ -50,7 +50,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		// Toggle pane mode
-		if msg.String() == "escape" && m.lastKey == "escape" {
+		if msg.String() == "esc" && m.lastKey == "esc" {
 			m.paneMode = !m.paneMode
 			m.lastKey = ""
 			return m, nil
@@ -67,10 +67,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.focusRight()
 			case "n":
 				cmd := m.splitPane()
+				m.paneMode = false
 				return m, cmd
 			case "q":
 				m.closePane()
 			}
+			m.paneMode = false
+			m.lastKey = ""
+			return m, nil
 		}
 
 		// Normal mode
@@ -113,6 +117,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				focused.pty.Master.Write([]byte("\x1b[D"))
 			case tea.KeyEscape:
 				focused.pty.Master.Write([]byte("\x1b"))
+
 			}
 		}
 	case ptyOutput:
@@ -179,6 +184,8 @@ func (m *model) splitPane() tea.Cmd {
 
 	return nil
 }
+
+func (m *model) closePane()
 
 func (m *model) focusLeft()  {}
 func (m *model) focusRight() {}
