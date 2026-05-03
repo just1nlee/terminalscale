@@ -187,7 +187,15 @@ func (m *model) splitPane() tea.Cmd {
 
 func (m *model) closePane()
 
-func (m *model) focusLeft()  {}
+func (m *model) focusLeft() {
+	for i, p := range m.panes {
+		if p.x < m.panes[m.focused].x {
+			m.focused = i
+			return
+		}
+	}
+}
+
 func (m *model) focusRight() {}
 func (m *model) focusUp()    {}
 func (m *model) focusDown()  {}
