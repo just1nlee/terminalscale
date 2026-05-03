@@ -71,6 +71,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd
 			case "q":
 				m.closePane()
+				return m, nil
 			}
 			m.paneMode = false
 			m.lastKey = ""
@@ -185,7 +186,20 @@ func (m *model) splitPane() tea.Cmd {
 	return nil
 }
 
-func (m *model) closePane()
+func (m *model) closePane() {
+	if len(m.panes) == 1 {
+		return
+	}
+
+	m.panes[m.focused].Close()
+
+	m.panes = append(m.panes[:m.focused], m.panes[m.focused+1:]...)
+	if m.focused >= len(m.panes) {
+		m.focused = len(m.panes) - 1
+	}
+
+	m.recalculateLayout()
+}
 
 func (m *model) focusLeft() {
 	for i, p := range m.panes {
