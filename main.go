@@ -5,10 +5,16 @@ import (
 	"os"
 
 	tea "charm.land/bubbletea/v2"
+	"golang.org/x/term"
 )
 
 func main() {
-	firstPane, err := NewPane(0, 0, 80, 24)
+	w, h, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		w, h = 80, 24
+	}
+
+	firstPane, err := NewPane(0, 0, w, h)
 	if err != nil {
 		panic(err)
 	}
@@ -16,6 +22,8 @@ func main() {
 	m := model{
 		panes:   []*Pane{firstPane},
 		focused: 0,
+		width:   w,
+		height:  h,
 	}
 
 	p := tea.NewProgram(m)
