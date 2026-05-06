@@ -88,13 +88,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.lastPaneModeKey = key
 			switch key {
-			case "k", "w":
+			case "k", "", "up":
 				m.focusUp()
-			case "h", "a":
+			case "h", "left":
 				m.focusLeft()
-			case "j", "s":
+			case "j", "down":
 				m.focusDown()
-			case "l", "d":
+			case "l", "right":
 				m.focusRight()
 			case "n":
 				cmd := m.splitPane()
@@ -208,7 +208,8 @@ func (m *model) handleIPC(req IPCRequest) (IPCResponse, tea.Cmd) {
 		return IPCResponse{Error: "pane not found"}, nil
 
 	case "write_pane":
-		text := strings.ReplaceAll(req.Text, `\n`, "\n")
+		text := req.Text
+		text = strings.ReplaceAll(text, `\n`, "\n")
 		text = strings.ReplaceAll(text, `\r`, "\r")
 		for wi := range m.workspaces {
 			for _, p := range m.workspaces[wi].panes {
