@@ -64,8 +64,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		// Toggle pane mode
-		if !m.paneMode && key == "esc" && m.lastInsertModeKey == "esc" {
+		// Enter pane mode with double-tab
+		if !m.paneMode && key == "tab" && m.lastInsertModeKey == "tab" {
 			m.paneMode = true
 			m.lastInsertModeKey = ""
 			return m, nil
@@ -79,7 +79,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			// Toggle insert mode
+			// Enter insert mode with double-i
 			if key == "i" && m.lastPaneModeKey == "i" && len(m.ws().panes) > 0 {
 				m.paneMode = false
 				m.showHelp = false
@@ -513,14 +513,14 @@ func (m model) renderStatusBar() string {
 		Bold(true).
 		Render("TERMINALSCALE")
 
-	// Workspace 0-9 indicator
+	// Workspace indicator
 	activeWsStyle := lipgloss.NewStyle().
 		Background(colorLightYellow).
 		Foreground(colorBackground).
 		Bold(true)
 	var wsParts []string
-	for i := 0; i < 10; i++ {
-		label := fmt.Sprintf(" %d ", (i+1)%10) // 1-9, then 0
+	for i := 0; i < len(m.workspaces); i++ {
+		label := fmt.Sprintf(" %d ", i+1)
 		if i == m.currentWorkspace {
 			wsParts = append(wsParts, activeWsStyle.Render(label))
 		} else {
