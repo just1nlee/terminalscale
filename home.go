@@ -81,9 +81,9 @@ func (m model) renderHelpPopup() string {
 		{"", ""},
 		{"esc + esc", "ENTER PANE MODE"},
 		{"n", "CREATE TERMINAL PANE"},
-		{"h/j/k/l", "FOCUS LEFT/DOWN/UP/RIGHT"},
+		{"h/j/k/l / arrows", "FOCUS LEFT/DOWN/UP/RIGHT"},
 		{"q", "CLOSE FOCUSED PANE"},
-		{"1-9, 0", "SWITCH WORKSPACE"},
+		{"1-5", "SWITCH WORKSPACE"},
 		{"", ""},
 		{"ctrl+q", "QUIT TERMINALSCALE"},
 	}

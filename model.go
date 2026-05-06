@@ -16,7 +16,7 @@ type workspace struct {
 }
 
 type model struct {
-	workspaces        [10]workspace
+	workspaces        [5]workspace
 	currentWorkspace  int
 	width             int
 	height            int
@@ -88,7 +88,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.lastPaneModeKey = key
 			switch key {
-			case "k", "", "up":
+			case "k", "up":
 				m.focusUp()
 			case "h", "left":
 				m.focusLeft()
@@ -104,12 +104,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "?":
 				m.showHelp = !m.showHelp
 				return m, nil
-			case "1", "2", "3", "4", "5", "6", "7", "8", "9":
+			case "1", "2", "3", "4", "5":
 				m.currentWorkspace = int(key[0] - '1')
 				m.recalculateLayout()
-			case "0":
-				m.currentWorkspace = 9
-				m.recalculateLayout()
+				// case "6", "7", "8", "9":
+				// 	m.currentWorkspace = int(key[0] - '1')
+				// 	m.recalculateLayout()
+				// 	//case "0":
+				// 	m.currentWorkspace = 9
+				// 	m.recalculateLayout()
 			}
 			return m, nil
 		}
