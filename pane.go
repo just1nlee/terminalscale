@@ -31,7 +31,7 @@ type Pane struct {
 
 func NewPane(x, y, width, height int) (*Pane, error) {
 	// SHELL to run
-	cmd := exec.Command("bash")
+	cmd := exec.Command(os.Getenv("SHELL"))
 	// Set TERM environment variable
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
 
