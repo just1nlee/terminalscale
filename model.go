@@ -132,22 +132,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			focused.pty.Master.Write([]byte(k.Text))
 		} else {
 			// Special key, translate to raw bytes
-			switch k.Code {
-			case tea.KeyEnter:
+			switch msg.String() {
+			case "ctrl+c":
+				focused.pty.Master.Write([]byte{0x03})
+			case "ctrl+d":
+				focused.pty.Master.Write([]byte{0x04})
+			case "enter":
 				focused.pty.Master.Write([]byte("\r"))
-			case tea.KeyBackspace:
+			case "backspace":
 				focused.pty.Master.Write([]byte("\x7f"))
-			case tea.KeyTab:
+			case "tab":
 				focused.pty.Master.Write([]byte("\t"))
-			case tea.KeyUp:
+			case "up":
 				focused.pty.Master.Write([]byte("\x1b[A"))
-			case tea.KeyDown:
+			case "down":
 				focused.pty.Master.Write([]byte("\x1b[B"))
-			case tea.KeyRight:
+			case "right":
 				focused.pty.Master.Write([]byte("\x1b[C"))
-			case tea.KeyLeft:
+			case "left":
 				focused.pty.Master.Write([]byte("\x1b[D"))
-			case tea.KeyEscape:
+			case "esc":
 				focused.pty.Master.Write([]byte("\x1b"))
 			}
 		}
