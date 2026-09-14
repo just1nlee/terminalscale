@@ -1,0 +1,4 @@
+terminalscale
+=============
+
+terminalscale is a custom terminal multiplexer designed to be easier to use than tmux.
